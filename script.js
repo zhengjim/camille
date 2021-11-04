@@ -67,10 +67,10 @@ function getPhoneState() {
         return temp;
     };
 
-    //imsi
+    //imsi/iccid
     TelephonyManager.getSimSerialNumber.overload().implementation = function () {
         var temp = this.getSimSerialNumber();
-        alertSend("获取IMSI", "获取IMSI为(String): " + temp);
+        alertSend("获取IMSI/iccid", "获取IMSI/iccid为(String): " + temp);
         return temp;
     };
 
@@ -81,30 +81,13 @@ function getPhoneState() {
         return temp;
     }
 
-    // //imsi
+    //imsi/iccid
     TelephonyManager.getSimSerialNumber.overload('int').implementation = function (p) {
         var temp = this.getSimSerialNumber(p);
-        alertSend("获取IMSI", "参数为：(" + p + "), 获取IMSI为(int): " + temp);
+        alertSend("获取IMSI/iccid", "参数为：(" + p + "), 获取IMSI/iccid为(int): " + temp);
         return temp;
-    };
-}
+    }
 
-// 获取Mac地址
-function getMacAddress() {
-    var WifiInfo = Java.use("android.net.wifi.WifiInfo");
-    WifiInfo.getMacAddress.implementation = function () {
-        var temp = this.getMacAddress();
-        alertSend("获取Mac地址", "获取到的Mac地址: " + temp)
-        return temp;
-    };
-
-
-    var NetworkInterface = Java.use("java.net.NetworkInterface");
-    NetworkInterface.getHardwareAddress.overload().implementation = function () {
-        var temp = this.getHardwareAddress();
-        alertSend("获取Mac地址", "获取到的Mac地址: " + temp)
-        return temp;
-    };
 }
 
 // 获取系统属性（记录关键的）
@@ -116,16 +99,60 @@ function getSystemProperties() {
         if (p1 == "ro.serialno") {
             alertSend("获取设备序列号", "获取(" + p1 + ")，值为：" + temp);
         }
+        if (p1 == "ro.build.display.id") {
+            alertSend("获取版本号", "获取(" + p1 + ")，值为：" + temp);
+        }
+        //MEID
+        if (p1 == "ril.cdma.meid") {
+            alertSend("获取MEID", "获取(" + p1 + ")，值为：" + temp);
+        }
+        //手机型号
+        if (p1 == "ro.product.model") {
+            alertSend("获取手机型号", "获取(" + p1 + ")，值为：" + temp);
+        }
+        //手机厂商
+        if (p1 == "ro.product.manufacturer") {
+            alertSend("获取手机厂商", "获取(" + p1 + ")，值为：" + temp);
+        }
+
         return temp;
     }
 
     SystemProperties.get.overload('java.lang.String', 'java.lang.String').implementation = function (p1, p2) {
         var temp = this.get(p1, p2)
+
         if (p1 == "ro.serialno") {
             alertSend("获取设备序列号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
         }
+        if (p1 == "ro.build.display.id") {
+            alertSend("获取版本号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
+        }
+        //MEID
+        if (p1 == "ril.cdma.meid") {
+            alertSend("获取MEID", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
+        }
+        //手机型号
+        if (p1 == "ro.product.model") {
+            alertSend("获取手机型号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
+        }
+        //手机厂商
+        if (p1 == "ro.product.manufacturer") {
+            alertSend("获取手机厂商", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
+        }
+
         return temp;
     }
+
+    SystemProperties.getInt.overload('java.lang.String', 'int').implementation = function (p1, p2) {
+        var temp = this.getInt(p1, p2)
+
+        if (p1 == "ro.build.version.sdk") {
+            alertSend("获取SDK版本号", "获取(" + p1 + ")，值为：" + temp);
+        }
+
+        return temp;
+    }
+
 }
 
 //获取手机通信录
@@ -219,7 +246,7 @@ function getGSP() {
 
     locationManager.requestLocationUpdates.overload("java.lang.String", "long", "float", "android.location.LocationListener").implementation = function (p1, p2, p3, p4) {
         var temp = this.requestLocationUpdates(p1, p2, p3, p4);
-        alertSend("获取位置信息", "获取位置信息")
+        alertSend("获取位置信息", "获取位置信息");
         return temp;
     }
 
@@ -231,9 +258,151 @@ function getCamera() {
 
     Camera.open.overload("int").implementation = function (p1) {
         var temp = this.open(p1);
-        alertSend("调用摄像头", "调用摄像头id：" + p1.toString())
+        alertSend("调用摄像头", "调用摄像头id：" + p1.toString());
         return temp;
     }
+}
+
+//获取网络信息
+function getNetwork() {
+    var WifiInfo = Java.use("android.net.wifi.WifiInfo");
+
+    //获取ip
+    WifiInfo.getIpAddress.implementation = function () {
+        var temp = this.getIpAddress();
+
+        var _ip = new Array();
+        _ip[0] = (temp >>> 24) >>> 0;
+        _ip[1] = ((temp << 8) >>> 24) >>> 0;
+        _ip[2] = (temp << 16) >>> 24;
+        _ip[3] = (temp << 24) >>> 24;
+        var _str = String(_ip[3]) + "." + String(_ip[2]) + "." + String(_ip[1]) + "." + String(_ip[0]);
+
+        alertSend("获取网络信息", "获取IP地址：" + _str);
+        return temp;
+    }
+    //获取mac地址
+    WifiInfo.getMacAddress.implementation = function () {
+        var temp = this.getMacAddress();
+        alertSend("获取Mac地址", "获取到的Mac地址: " + temp);
+        return temp;
+    }
+
+    WifiInfo.getSSID.implementation = function () {
+        var temp = this.getSSID();
+        alertSend("获取wifi SSID", "获取到的SSID: " + temp);
+        return temp;
+    }
+
+    WifiInfo.getBSSID.implementation = function () {
+        var temp = this.getBSSID();
+        alertSend("获取wifi BSSID", "获取到的BSSID: " + temp);
+        return temp;
+    }
+
+    var InetAddress = Java.use("java.net.InetAddress");
+
+    //获取IP
+    InetAddress.getHostAddress.implementation = function () {
+        var temp = this.getHostAddress();
+
+        alertSend("获取网络信息", "获取IP地址：" + temp.toString());
+        return temp;
+    }
+
+    var NetworkInterface = Java.use("java.net.NetworkInterface");
+
+    //获取mac
+    NetworkInterface.getHardwareAddress.overload().implementation = function () {
+        var temp = this.getHardwareAddress();
+        alertSend("获取Mac地址", "获取到的Mac地址: " + temp);
+        return temp;
+    }
+
+    var NetworkInfo = Java.use("android.net.NetworkInfo");
+
+    NetworkInfo.getType.implementation = function () {
+        var temp = this.getType();
+        alertSend("获取网络信息", "获取网络类型：" + temp.toString());
+        return temp;
+    }
+
+    NetworkInfo.getTypeName.implementation = function () {
+        var temp = this.getTypeName();
+        alertSend("获取网络信息", "获取网络类型名称：" + temp);
+        return temp;
+    }
+
+    NetworkInfo.getExtraInfo.implementation = function () {
+        var temp = this.getExtraInfo();
+        alertSend("获取网络信息", "获取网络名称：" + temp);
+        return temp;
+    }
+
+    NetworkInfo.isAvailable.implementation = function () {
+        var temp = this.isAvailable();
+        alertSend("获取网络信息", "获取网络是否可用：" + temp.toString());
+        return temp;
+    }
+
+    NetworkInfo.isConnected.implementation = function () {
+        var temp = this.isConnected();
+        alertSend("获取网络信息", "获取网络是否连接：" + temp.toString());
+        return temp;
+    }
+
+}
+
+//获取蓝牙设备信息
+function getBluetooth() {
+    var BluetoothDevice = Java.use("android.bluetooth.BluetoothDevice");
+
+    //获取蓝牙设备名称
+    BluetoothDevice.getName.overload().implementation = function () {
+        var temp = this.getName();
+        alertSend("获取蓝牙信息", "获取到的蓝牙设备名称: " + temp)
+        return temp;
+    }
+
+    //获取蓝牙设备mac
+    BluetoothDevice.getAddress.implementation = function () {
+        var temp = this.getAddress();
+        alertSend("获取蓝牙信息", "获取到的蓝牙设备mac: " + temp)
+        return temp;
+    }
+
+}
+
+//获取基站信息
+function getCidorLac() {
+    // 电信卡cid lac
+    var CdmaCellLocation = Java.use("android.telephony.cdma.CdmaCellLocation");
+
+    CdmaCellLocation.getBaseStationId.implementation = function () {
+        var temp = this.getBaseStationId();
+        alertSend("获取基站信息", "获取到的cid: " + temp);
+        return temp
+    }
+    CdmaCellLocation.getNetworkId.implementation = function () {
+        var temp = this.getNetworkId();
+        alertSend("获取基站信息", "获取到的lac: " + temp);
+        return temp
+    }
+
+    // 移动 联通卡 cid/lac
+    var GsmCellLocation = Java.use("android.telephony.gsm.GsmCellLocation");
+
+    GsmCellLocation.getCid.implementation = function () {
+        var temp = this.getCid();
+        alertSend("获取基站信息", "获取到的cid: " + temp);
+        return temp
+    }
+    GsmCellLocation.getLac.implementation = function () {
+        var temp = this.getLac();
+        alertSend("获取基站信息", "获取到的lac: " + temp);
+        return temp
+    }
+
 }
 
 function main() {
@@ -242,13 +411,15 @@ function main() {
         send({"type": "isHook"})
         checkRequestPermission();
         getPhoneState();
-        getMacAddress();
         getSystemProperties();
         getPhoneAddressBook();
         getAndroidId();
         getPackageManager();
         getGSP();
         getCamera();
+        getNetwork();
+        getBluetooth();
+
     });
 }
 

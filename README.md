@@ -143,3 +143,11 @@ python camille.py com.zhengjim.myapplication -t 3
 - https://github.com/Dawnnnnnn/APPPrivacyDetect
 - https://github.com/r0ysue/r0capture/
 - https://github.com/ChenJunsen/Hegui3.0
+
+
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/zhengjim/camille.svg)](https://starchart.cc/zhengjim/camille)
+
+

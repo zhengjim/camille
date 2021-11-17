@@ -186,6 +186,7 @@ function getAndroidId() {
 function getPackageManager() {
     var PackageManager = Java.use("android.content.pm.PackageManager");
     var ApplicationPackageManager = Java.use("android.app.ApplicationPackageManager");
+    var ActivityManager = Java.use("android.app.ActivityManager");
 
     PackageManager.getInstalledPackages.overload('int').implementation = function (p1) {
         var temp = this.getInstalledPackages(p1);
@@ -230,6 +231,12 @@ function getPackageManager() {
         if (string_to_recv) {
             alertSend("获取其他app信息", "getApplicationInfo获取的数据为：" + temp);
         }
+        return temp;
+    };
+
+    ActivityManager.getRunningAppProcesses.implementation = function () {
+        var temp = this.getRunningAppProcesses();
+        alertSend("获取其他app信息", "获取了正在运行的App");
         return temp;
     };
 }
@@ -299,6 +306,15 @@ function getNetwork() {
         alertSend("获取wifi BSSID", "获取到的BSSID: " + temp);
         return temp;
     }
+
+    var WifiManager = Java.use("android.net.wifi.WifiManager");
+
+    // 获取wifi信息
+    WifiManager.getConnectionInfo.implementation = function () {
+        var temp = this.getConnectionInfo();
+        alertSend("获取wifi信息", "获取wifi信息");
+        return temp;
+    };
 
     var InetAddress = Java.use("java.net.InetAddress");
 
@@ -370,6 +386,16 @@ function getBluetooth() {
         alertSend("获取蓝牙信息", "获取到的蓝牙设备mac: " + temp)
         return temp;
     }
+
+    var BluetoothAdapter = Java.use("android.bluetooth.BluetoothAdapter");
+
+    //获取蓝牙设备名称
+    BluetoothAdapter.getName.implementation = function () {
+        var temp = this.getName();
+        alertSend("获取蓝牙信息", "获取到的蓝牙设备名称: " + temp)
+        return temp;
+    };
+
 
 }
 

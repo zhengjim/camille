@@ -160,7 +160,12 @@ def frida_hook(app_name, wait_time=0, is_show=True, execl_file=None):
     script.on("message", my_message_handler)
     script.load()
     time.sleep(1)
-    device.resume(pid)
+    try:
+        device.resume(pid)
+    except Exception as e:
+        print("[*] hook error")
+        print(e)
+        exit()
 
     wait_time += 1
     time.sleep(wait_time)

@@ -155,17 +155,35 @@ function getSystemProperties() {
 
 }
 
-//获取手机通信录
-function getPhoneAddressBook() {
-    var contacts_uri = Java.use("android.provider.ContactsContract$Contacts").CONTENT_URI.value.toString();
+//获取content敏感信息
+function getContentProvider() {
 
-    var contentResolver = Java.use("android.content.ContentResolver");
-    contentResolver.query.overload('android.net.Uri', '[Ljava.lang.String;', 'android.os.Bundle', 'android.os.CancellationSignal').implementation = function (uri, str, bundle, sig) {
-        if (uri == contacts_uri) {
-            alertSend("获取手机通信录", "获取uri为：" + uri)
+    var ContentResolver = Java.use("android.content.ContentResolver");
+
+    // 通讯录内容
+    var ContactsContract = Java.use("android.provider.ContactsContract");
+    var contact_authority = ContactsContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+
+    // 日历内容
+    var CalendarContract = Java.use("android.provider.CalendarContract");
+    var calendar_authority = CalendarContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+
+    // 浏览器内容
+    var BrowserContract = Java.use("android.provider.BrowserContract");
+    var browser_authority = BrowserContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+
+    ContentResolver.query.overload('android.net.Uri', '[Ljava.lang.String;', 'android.os.Bundle', 'android.os.CancellationSignal').implementation = function (p1, p2, p3, p4) {
+        var temp = this.query(p1, p2, p3, p4);
+        if (p1.toString().indexOf(contact_authority) != -1) {
+            alertSend("获取content敏感信息", "获取手机通信录内容");
+        } else if (p1.toString().indexOf(calendar_authority) != -1) {
+            alertSend("获取content敏感信息", "获取日历内容");
+        } else if (p1.toString().indexOf(browser_authority) != -1) {
+            alertSend("获取content敏感信息", "获取浏览器内容");
         }
-        return this.query(uri, str, bundle, sig);
+        return temp;
     }
+
 }
 
 // 获取安卓ID
@@ -438,7 +456,7 @@ function main() {
         checkRequestPermission();
         getPhoneState();
         getSystemProperties();
-        getPhoneAddressBook();
+        getContentProvider();
         getAndroidId();
         getPackageManager();
         getGSP();

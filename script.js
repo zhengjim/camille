@@ -449,6 +449,42 @@ function getCidorLac() {
 
 }
 
+// 获取短信相关信息/发送短信
+function getSMSManager() {
+    var SmsManager = Java.use("android.telephony.SmsManager");
+
+    SmsManager.sendTextMessageInternal.implementation = function (p1, p2, p3, p4, p5, p6, p7, p8, p9) {
+        var temp = this.sendTextMessageInternal(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+        alertSend("获取短信信息", "发送短信 '" + p3 + "' to '" + p1 + "'");
+        return temp;
+    }
+
+    SmsManager.sendTextMessageWithSelfPermissions.implementation = function (p1, p2, p3, p4, p5, p6) {
+        var temp = this.sendTextMessageWithSelfPermissions(p1, p2, p3, p4, p5, p6);
+        alertSend("获取短信信息", "发送短信 '" + p3 + "' to '" + p1 + "'");
+        return temp;
+    }
+
+    SmsManager.sendMultipartTextMessageInternal.implementation = function (p1, p2, p3, p4, p5, p6, p7, p8, p9) {
+        var temp = this.sendMultipartTextMessageInternal(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+        alertSend("获取短信信息", "发送短信 '" + p3.toString() + "' to '" + p1 + "'");
+        return temp;
+    }
+
+    SmsManager.sendDataMessage.implementation = function (p1, p2, p3, p4, p5, p6) {
+        var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
+        alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
+        return temp;
+    }
+
+    SmsManager.sendDataMessageWithSelfPermissions.implementation = function (p1, p2, p3, p4, p5, p6) {
+        var temp = this.sendDataMessageWithSelfPermissions(p1, p2, p3, p4, p5, p6);
+        alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
+        return temp;
+    }
+
+}
+
 function main() {
     Java.perform(function () {
         console.log("合规检测敏感接口开始监控...");
@@ -463,7 +499,8 @@ function main() {
         getCamera();
         getNetwork();
         getBluetooth();
-
+        getCidorLac();
+        getSMSManager();
     });
 }
 

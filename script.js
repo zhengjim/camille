@@ -551,11 +551,18 @@ function getSMSManager() {
             return temp;
         }
     }
-
-    SmsManager.sendDataMessage.implementation = function (p1, p2, p3, p4, p5, p6) {
-        var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
-        alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
-        return temp;
+    try {
+        SmsManager.sendDataMessage.implementation = function (p1, p2, p3, p4, p5, p6) {
+            var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
+            alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
+            return temp;
+        }
+    } catch (e) {
+        SmsManager.sendDataMessage.over('java.lang.String', 'java.lang.String', 'short', '[B', 'android.app.PendingIntent', 'android.app.PendingIntent').implementation = function (p1, p2, p3, p4, p5, p6) {
+            var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
+            alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
+            return temp;
+        }
     }
 
     SmsManager.sendDataMessageWithSelfPermissions.implementation = function (p1, p2, p3, p4, p5, p6) {

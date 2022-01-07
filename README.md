@@ -12,6 +12,8 @@ Android App隐私合规检测辅助工具
 
 python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣Android 8.1，感觉问题挺多的)，并在手机上运行`frida-server`。
 
+只测试了Android 8.1，其他版本安卓可能会有bug。
+
 下载：
 
 ```

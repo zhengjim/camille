@@ -574,22 +574,26 @@ function getSMSManager() {
 }
 
 function main() {
-    Java.perform(function () {
-        console.log("合规检测敏感接口开始监控...");
-        send({"type": "isHook"})
-        checkRequestPermission();
-        getPhoneState();
-        getSystemProperties();
-        getContentProvider();
-        getAndroidId();
-        getPackageManager();
-        getGSP();
-        getCamera();
-        getNetwork();
-        getBluetooth();
-        getCidorLac();
-        getSMSManager();
-    });
+    try {
+        Java.perform(function () {
+            console.log("合规检测敏感接口开始监控...");
+            send({"type": "isHook"})
+            checkRequestPermission();
+            getPhoneState();
+            getSystemProperties();
+            getContentProvider();
+            getAndroidId();
+            getPackageManager();
+            getGSP();
+            getCamera();
+            getNetwork();
+            getBluetooth();
+            getCidorLac();
+            getSMSManager();
+        });
+    }catch (e) {
+        console.log(e)
+    }
 }
 
 //在spawn模式下，hook系统API时如javax.crypto.Cipher建议使用setImmediate立即执行，不需要延时

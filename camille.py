@@ -57,11 +57,11 @@ def show_banner():
         pass
 
 
-def frida_hook(app_name, wait_time=0, is_show=True, execl_file=None):
+def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None):
     """
-
-    :param wait_time: 延迟hook，避免加壳
     :param app_name: 包名
+    :param use_module 使用哪些模块
+    :param wait_time: 延迟hook，避免加壳
     :param is_show: 是否实时显示告警
     :param execl_file 导出文件
 
@@ -101,9 +101,15 @@ def frida_hook(app_name, wait_time=0, is_show=True, execl_file=None):
             if data['type'] == "isHook":
                 global isHook
                 isHook = True
-
+                script.post({"use_module": use_module})
+            if data['type'] == "noFoundModule":
+                print('[*] Not Found Module: ' + data['data'] + " . Please exit the check")
+                session.detach()
     try:
-        device = frida.get_usb_device()
+        try:
+            device = frida.get_usb_device()
+        except:
+            device = frida.get_remote_device()
         pid = device.spawn([app_name])
     except Exception as e:
         print("[*] hook error")
@@ -193,9 +199,22 @@ if __name__ == '__main__':
     parser.add_argument("--noshow", "-ns", required=False, action="store_const", default=True, const=False,
                         help="Showing the alert message")
     parser.add_argument("--file", "-f", metavar="<path>", required=False, help="Name of Excel file to write")
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument("--use", "-u", required=False,
+                       help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
+    group.add_argument("--nouse", "-nu", required=False,
+                       help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
 
     args = parser.parse_args()
     # 全局变量
     isHook = False
     index_row = 1
-    frida_hook(args.package, args.time, args.noshow, args.file)
+
+    use_module = {"type": "all", "data": []}
+    if args.use:
+        use_module = {"type": "use", "data": args.use}
+    if args.nouse:
+        use_module = {"type": "nouse", "data": args.nouse}
+
+    frida_hook(args.package, use_module, args.time, args.noshow, args.file)

@@ -38,7 +38,6 @@ function checkRequestPermission() {
     }
 }
 
-
 // APP获取IMEI/IMSI
 function getPhoneState() {
     try {
@@ -511,66 +510,49 @@ function getCidorLac() {
 
 }
 
-// 获取短信相关信息/发送短信
-function getSMSManager() {
-    try {
-        var SmsManager = Java.use("android.telephony.SmsManager");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    try {
-        SmsManager.sendTextMessageInternal.implementation = function (p1, p2, p3, p4, p5, p6) {
-            var temp = this.sendTextMessageInternal(p1, p2, p3, p4, p5, p6);
-            alertSend("获取短信信息", "发送短信 '" + p3 + "' to '" + p1 + "'");
-            return temp;
-        }
-    } catch (e) {
-        SmsManager.sendTextMessageInternal.overload('java.lang.String', 'java.lang.String', 'java.lang.String', 'android.app.PendingIntent', 'android.app.PendingIntent', 'boolean', 'int', 'boolean', 'int').implementation = function (p1, p2, p3, p4, p5, p6, p7, p8, p9) {
-            var temp = this.sendTextMessageInternal(p1, p2, p3, p4, p5, p6, p7, p8, p9);
-            alertSend("获取短信信息", "发送短信 '" + p3 + "' to '" + p1 + "'");
-            return temp;
+
+function useModule(moduleList) {
+    var _module = {
+        "permission": [checkRequestPermission],
+        "phone": [getPhoneState, getCidorLac],
+        "system": [getSystemProperties, getContentProvider, getAndroidId],
+        "app": [getPackageManager],
+        "location": [getGSP],
+        "network": [getNetwork],
+        "camera": [getCamera],
+        "bluetooth": [getBluetooth],
+    };
+    var _m = ['permission', 'phone', 'system', 'app', 'location', 'network', 'camera', 'bluetooth'];
+    if (moduleList['type'] !== "all") {
+        var input_module_data = moduleList['data'].split(',');
+        for (i = 0; i < input_module_data.length; i++) {
+            if (_m.indexOf(input_module_data[i]) === -1) {
+                send({"type": "noFoundModule", 'data': input_module_data[i]})
+                return
+            }
         }
     }
 
-    SmsManager.sendTextMessageWithSelfPermissions.implementation = function (p1, p2, p3, p4, p5, p6) {
-        var temp = this.sendTextMessageWithSelfPermissions(p1, p2, p3, p4, p5, p6);
-        alertSend("获取短信信息", "发送短信 '" + p3 + "' to '" + p1 + "'");
-        return temp;
+    switch (moduleList['type']) {
+        case "use":
+            _m = input_module_data;
+            break;
+        case "nouse":
+            for (var i = 0; i < input_module_data.length; i++) {
+                for (var j = 0; j < _m.length; j++) {
+                    if (_m[j] == input_module_data[i]) {
+                        _m.splice(j, 1);
+                        j--;
+                    }
+                }
+            }
+            break;
     }
-    try {
-        SmsManager.sendMultipartTextMessageInternal.implementation = function (p1, p2, p3, p4, p5, p6, p7, p8, p9) {
-            var temp = this.sendMultipartTextMessageInternal(p1, p2, p3, p4, p5, p6, p7, p8, p9);
-            alertSend("获取短信信息", "发送短信 '" + p3.toString() + "' to '" + p1 + "'");
-            return temp;
-        }
-    } catch (e) {
-        SmsManager.sendMultipartTextMessageInternal.overload('java.lang.String', 'java.lang.String', 'java.util.List', 'java.util.List', 'java.util.List', 'boolean', 'int', 'boolean', 'int').implementation = function (p1, p2, p3, p4, p5, p6, p7, p8, p9) {
-            var temp = this.sendMultipartTextMessageInternal(p1, p2, p3, p4, p5, p6, p7, p8, p9);
-            alertSend("获取短信信息", "发送短信 '" + p3.toString() + "' to '" + p1 + "'");
-            return temp;
-        }
-    }
-    try {
-        SmsManager.sendDataMessage.implementation = function (p1, p2, p3, p4, p5, p6) {
-            var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
-            alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
-            return temp;
-        }
-    } catch (e) {
-        SmsManager.sendDataMessage.over('java.lang.String', 'java.lang.String', 'short', '[B', 'android.app.PendingIntent', 'android.app.PendingIntent').implementation = function (p1, p2, p3, p4, p5, p6) {
-            var temp = this.sendDataMessage(p1, p2, p3, p4, p5, p6);
-            alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
-            return temp;
+    for (i = 0; i < _m.length; i++) {
+        for (j = 0; j < _module[_m[i]].length; j++) {
+            _module[_m[i]][j]();
         }
     }
-
-    SmsManager.sendDataMessageWithSelfPermissions.implementation = function (p1, p2, p3, p4, p5, p6) {
-        var temp = this.sendDataMessageWithSelfPermissions(p1, p2, p3, p4, p5, p6);
-        alertSend("获取短信信息", "发送短信 '" + p4.toString() + "' to '" + p1 + "'");
-        return temp;
-    }
-
 }
 
 function main() {
@@ -578,20 +560,13 @@ function main() {
         Java.perform(function () {
             console.log("合规检测敏感接口开始监控...");
             send({"type": "isHook"})
-            checkRequestPermission();
-            getPhoneState();
-            getSystemProperties();
-            getContentProvider();
-            getAndroidId();
-            getPackageManager();
-            getGSP();
-            getCamera();
-            getNetwork();
-            getBluetooth();
-            getCidorLac();
-            getSMSManager();
+            var moduleList;
+            recv(function (received_json_object) {
+                moduleList = received_json_object.use_module;
+            }).wait();
+            useModule(moduleList);
         });
-    }catch (e) {
+    } catch (e) {
         console.log(e)
     }
 }

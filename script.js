@@ -88,6 +88,13 @@ function getPhoneState() {
         return temp;
     }
 
+    //SIM卡国家代码
+    TelephonyManager.getSimCountryIso.overload().implementation = function () {
+        var temp = this.getSimCountryIso();
+        alertSend("获取SIM卡国家代码", "获取SIM卡国家代码为(String): " + temp);
+        return temp;
+    }
+
     //imsi/iccid
     TelephonyManager.getSimSerialNumber.overload('int').implementation = function (p) {
         var temp = this.getSimSerialNumber(p);

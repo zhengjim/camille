@@ -12,9 +12,11 @@ Android App隐私合规检测辅助工具
 
 python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣Android 8.1，感觉问题挺多的)，并在手机上运行`frida-server`。
 
-只测试了Android 8.1，其他版本安卓可能会有bug。
+测试了Android 8.1(还测试了魔趣Android 10)，其他版本安卓可能会有bug。
 
 2022-01-14：删除hook短信接口。新增：可指定模块hook或不hook哪些模块。默认不传，全扫描。
+
+2022-06-22：修复程序异常退出、冗余度高、hook接口不全有遗落、新增多个Android版本接口；封装hook方法，新增用户自定义hook方法。
 
 下载：
 
@@ -55,8 +57,11 @@ python camille.py com.zhengjim.myapplication -t 3
 - -t： hook应用自己的函数或含壳时，建议使用setTimeout并给出适当的延时(1-5s，需要根据不同app进行调整)。以免hook失败。默认不延迟。
 
 如下图：不加延迟hook失败。
+
 ![img.png](images/img3.png)
+
 加了延迟hook成功。
+
 ![img_1.png](images/img4.png)
 
 
@@ -74,8 +79,25 @@ python camille.py com.zhengjim.myapplication -t 3
 |network|getNetwork|
 |camera|照相机|
 |bluetooth|蓝牙|
+|custom| 用户自定义接口|
 
 - -nu：跳过扫描指定模块。与命令`-u`互斥。多个模块用','隔开。例如：phone,permission 模块列表同上
+
+## 自定义hook接口
+
+在`script.js`文件里的`customHook`方法里可自行添加需要hook的接口。
+
+如hook`com.zhengjim.myapplication.HookTest`类的`getPassword`和`getUser`方法。如下：
+
+```
+hook('com.zhengjim.myapplication.HookTest', [
+    {'methodName': 'getPassword', 'action': action, 'messages': '获取zhengjim密码'},
+    {'methodName': 'getUser', 'action': action, 'messages': '获取zhengjim用户名'},
+]);
+```
+
+`-u custom`是只检测自定义接口，如图：
+![img.png](images/img5.png)
 
 ## 后记
 
@@ -85,7 +107,7 @@ python camille.py com.zhengjim.myapplication -t 3
 
 **参考百度史宾格的检测场景，根据工信部信管函〔2020〕164号文（共37项），需要人工自查的有11项**
 
-网站：https://console.bce.baidu.com/springer (现在1.2元/次，挺划算的，嫌麻烦的直接用就行)
+网站：https://console.bce.baidu.com/springer (~~现在1.2元/次，挺划算的，嫌麻烦的直接用就行。~~ 已经1000元/次)
 
 ### 1 APP、SDK违规处理用户个人信息方面
 
@@ -166,6 +188,8 @@ python camille.py com.zhengjim.myapplication -t 3
 - https://github.com/ChenJunsen/Hegui3.0
 
 ## Stargazers over time
+
+[![Top Langs](https://profile-counter.glitch.me/zhengjim/count.svg)](https://www.zhengjim.com)
 
 [![Stargazers over time](https://starchart.cc/zhengjim/camille.svg)](https://starchart.cc/zhengjim/camille)
 

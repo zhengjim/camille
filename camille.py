@@ -79,11 +79,13 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
             if data["type"] == "notice":
                 alert_time = data['time']
                 action = data['action']
+                arg = data['arg']
                 messages = data['messages']
                 stacks = data['stacks']
                 if is_show:
                     print("------------------------------start---------------------------------")
-                    print("[*] {0}，APP行为：{1}，行为描述：{2}".format(alert_time, action, messages))
+                    print("[*] {0}，APP行为：{1}、行为描述：{2}、传入参数：{3}".format(
+                        alert_time, action, messages, arg.replace('\r\n', '，')))
                     print("[*] 调用堆栈：")
                     print(stacks)
                     print("-------------------------------end----------------------------------")
@@ -92,7 +94,8 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
                     worksheet.write(index_row, 0, alert_time, content_style)
                     worksheet.write(index_row, 1, action, content_style)
                     worksheet.write(index_row, 2, messages, content_style)
-                    worksheet.write(index_row, 3, stacks, content_style)
+                    worksheet.write(index_row, 3, arg, content_style)
+                    worksheet.write(index_row, 4, stacks, content_style)
                     index_row += 1
             if data['type'] == "app_name":
                 get_app_name = data['data']
@@ -105,6 +108,7 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
             if data['type'] == "noFoundModule":
                 print('[*] Not Found Module: ' + data['data'] + " . Please exit the check")
                 session.detach()
+
     try:
         try:
             device = frida.get_usb_device()
@@ -144,8 +148,10 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
         worksheet.col(1).width = 20 * 300
         worksheet.write(0, 2, '行为描述', title_style)
         worksheet.col(2).width = 20 * 400
-        worksheet.write(0, 3, '调用堆栈', title_style)
-        worksheet.col(3).width = 20 * 1200
+        worksheet.write(0, 3, '传入参数', title_style)
+        worksheet.col(3).width = 20 * 400
+        worksheet.write(0, 4, '调用堆栈', title_style)
+        worksheet.col(4).width = 20 * 1200
 
         content_style = xlwt.XFStyle()
         content_font = xlwt.Font()

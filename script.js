@@ -1,284 +1,261 @@
+// 绕过TracerPid检测
+var ByPassTracerPid = function () {
+    var fgetsPtr = Module.findExportByName('libc.so', 'fgets');
+    var fgets = new NativeFunction(fgetsPtr, 'pointer', ['pointer', 'int', 'pointer']);
+    Interceptor.replace(fgetsPtr, new NativeCallback(function (buffer, size, fp) {
+        var retval = fgets(buffer, size, fp);
+        var bufstr = Memory.readUtf8String(buffer);
+        if (bufstr.indexOf('TracerPid:') > -1) {
+            Memory.writeUtf8String(buffer, 'TracerPid:\t0');
+            console.log('tracerpid replaced: ' + Memory.readUtf8String(buffer));
+        }
+        return retval;
+    }, 'pointer', ['pointer', 'int', 'pointer']));
+};
+setImmediate(ByPassTracerPid);
+
 // 获取调用链
 function getStackTrace() {
-    var Exception = Java.use("java.lang.Exception");
-    var ins = Exception.$new("Exception");
+    var Exception = Java.use('java.lang.Exception');
+    var ins = Exception.$new('Exception');
     var straces = ins.getStackTrace();
     if (undefined == straces || null == straces) {
         return;
     }
-    var result = "";
+    var result = '';
     for (var i = 0; i < straces.length; i++) {
-        var str = "   " + straces[i].toString();
-        result += str + "\r\n";
+        var str = '   ' + straces[i].toString();
+        result += str + '\r\n';
     }
     Exception.$dispose();
     return result;
 }
 
 //告警发送
-function alertSend(action, messages) {
+function alertSend(action, messages, arg) {
     var myDate = new Date();
-    var _time = myDate.getFullYear() + "-" + myDate.getMonth() + "-" + myDate.getDate() + " " + myDate.getHours() + ":" + myDate.getMinutes() + ":" + myDate.getSeconds();
-    send({"type": "notice", "time": _time, "action": action, "messages": messages, "stacks": getStackTrace()});
+    var _time = myDate.getFullYear() + '-' + myDate.getMonth() + '-' + myDate.getDate() + ' ' + myDate.getHours() + ':' + myDate.getMinutes() + ':' + myDate.getSeconds();
+    send({
+        'type': 'notice',
+        'time': _time,
+        'action': action,
+        'messages': messages,
+        'arg': arg,
+        'stacks': getStackTrace()
+    });
 }
 
+// hook方法
+function hookMethod(targetClass, targetMethod, action, messages) {
+    try {
+        var _Class = Java.use(targetClass);
+    } catch (e) {
+        return false;
+    }
+    try {
+        var overloadCount = _Class[targetMethod].overloads.length;
+    } catch (e) {
+        console.log(e)
+        console.log('[*] hook(' + targetMethod + ')方法失败,请检查该方法是否存在！！！');
+        return false;
+    }
+    for (var i = 0; i < overloadCount; i++) {
+        _Class[targetMethod].overloads[i].implementation = function () {
+            var temp = this[targetMethod].apply(this, arguments);
+            var arg = '';
+            for (var j = 0; j < arguments.length; j++) {
+                arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
+            }
+            if (arg.length == 0) arg = '无参数';
+            else arg = arg.slice(0, arg.length - 1);
+            alertSend(action, messages, arg);
+            return temp;
+        }
+    }
+    return true;
+}
 
-// APP申请权限
+// hook方法(去掉不存在方法）
+function hook(targetClass, methodData) {
+    try {
+        var _Class = Java.use(targetClass);
+    } catch (e) {
+        return false;
+    }
+    var methods = _Class.class.getDeclaredMethods();
+    _Class.$dispose;
+    // 排查掉不存在的方法，用于各个android版本不存在方法报错问题。
+    methodData.forEach(function (methodData) {
+        for (var method of methods) {
+            if (method.toString().indexOf(methodData['methodName']) != -1) {
+                hookMethod(targetClass, methodData['methodName'], methodData['action'], methodData['messages']);
+                break;
+            }
+        }
+    });
+}
+
+// 申请权限
 function checkRequestPermission() {
-    try {
-        var ActivityCompat = Java.use("androidx.core.app.ActivityCompat")
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    ActivityCompat.requestPermissions.overload('android.app.Activity', '[Ljava.lang.String;', 'int').implementation = function (p1, p2, p3) {
-        var temp = this.requestPermissions(p1, p2, p3);
-        alertSend("APP申请权限", "申请权限为: " + p2);
-        return temp
-    }
+    var action = '申请权限';
+
+    //老项目
+    hook('android.support.v4.app.ActivityCompat', [
+        {'methodName': 'requestPermissions', 'action': action, 'messages': '申请具体权限看"参数1"'}
+    ]);
+
+    hook('androidx.core.app.ActivityCompat', [
+        {'methodName': 'requestPermissions', 'action': action, 'messages': '申请具体权限看"参数1"'}
+    ]);
 }
 
-// APP获取IMEI/IMSI
+// 获取电话相关信息
 function getPhoneState() {
-    try {
-        var TelephonyManager = Java.use("android.telephony.TelephonyManager");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    // API level 26 获取单个IMEI的方法
-    TelephonyManager.getDeviceId.overload().implementation = function () {
-        var temp = this.getDeviceId();
-        alertSend("获取IMEI", "获取的IMEI为: " + temp)
-        return temp;
-    };
+    var action = '获取电话相关信息';
 
-    //API level 26 获取多个IMEI的方法
-    TelephonyManager.getDeviceId.overload('int').implementation = function (p) {
-        var temp = this.getDeviceId(p);
-        alertSend("获取IMEI", "获取(" + p + ")的IMEI为: " + temp);
-        return temp;
-    };
+    hook('android.telephony.TelephonyManager', [
+        // Android 8.0
+        {'methodName': 'getDeviceId', 'action': action, 'messages': '获取IMEI'},
+        // Android 8.1、9   android 10获取不到
+        {'methodName': 'getImei', 'action': action, 'messages': '获取IMEI'},
 
-    //API LEVEL26以上的获取单个IMEI方法
-    TelephonyManager.getImei.overload().implementation = function () {
-        var temp = this.getImei();
-        alertSend("获取IMEI", "获取的IMEI为: " + temp)
-        return temp;
-    };
+        {'methodName': 'getMeid', 'action': action, 'messages': '获取MEID'},
+        {'methodName': 'getLine1Number', 'action': action, 'messages': '获取电话号码标识符'},
+        {'methodName': 'getSimSerialNumber', 'action': action, 'messages': '获取IMSI/iccid'},
+        {'methodName': 'getSubscriberId', 'action': action, 'messages': '获取IMSI'},
+        {'methodName': 'getSimOperator', 'action': action, 'messages': '获取MCC/MNC'},
+        {'methodName': 'getNetworkOperator', 'action': action, 'messages': '获取MCC/MNC'},
+        {'methodName': 'getSimCountryIso', 'action': action, 'messages': '获取SIM卡国家代码'},
 
-    // API LEVEL26以上的获取多个IMEI方法
-    TelephonyManager.getImei.overload('int').implementation = function (p) {
-        var temp = this.getImei(p);
-        alertSend("获取IMEI", "获取(" + p + ")的IMEI为: " + temp);
-        return temp;
-    };
+        {'methodName': 'getCellLocation', 'action': action, 'messages': '获取电话当前位置信息'},
+        {'methodName': 'getAllCellInfo', 'action': action, 'messages': '获取电话当前位置信息'},
+        {'methodName': 'requestCellInfoUpdate', 'action': action, 'messages': '获取基站信息'},
+        {'methodName': 'getServiceState', 'action': action, 'messages': '获取sim卡是否可用'},
+    ]);
 
-    //imsi/iccid
-    TelephonyManager.getSimSerialNumber.overload().implementation = function () {
-        var temp = this.getSimSerialNumber();
-        alertSend("获取IMSI/iccid", "获取IMSI/iccid为(String): " + temp);
-        return temp;
-    };
+    // 电信卡cid lac
+    hook('android.telephony.cdma.CdmaCellLocation', [
+        {'methodName': 'getBaseStationId', 'action': action, 'messages': '获取基站cid信息'},
+        {'methodName': 'getNetworkId', 'action': action, 'messages': '获取基站lac信息'}
+    ]);
 
-    //imsi
-    TelephonyManager.getSubscriberId.overload().implementation = function () {
-        var temp = this.getSubscriberId();
-        alertSend("获取IMSI", "获取IMSI为(int): " + temp);
-        return temp;
-    }
-
-    //imsi/iccid
-    TelephonyManager.getSimSerialNumber.overload('int').implementation = function (p) {
-        var temp = this.getSimSerialNumber(p);
-        alertSend("获取IMSI/iccid", "参数为：(" + p + "), 获取IMSI/iccid为(int): " + temp);
-        return temp;
-    }
-
+    // 移动联通卡 cid/lac
+    hook('android.telephony.gsm.GsmCellLocation', [
+        {'methodName': 'getCid', 'action': action, 'messages': '获取基站cid信息'},
+        {'methodName': 'getLac', 'action': action, 'messages': '获取基站lac信息'}
+    ]);
 }
 
-// 获取系统属性（记录关键的）。意义不大，frida获取不到。暂时留着
-function getSystemProperties() {
-    try {
-        var SystemProperties = Java.use("android.os.SystemProperties");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    SystemProperties.get.overload('java.lang.String').implementation = function (p1) {
-        var temp = this.get(p1);
-        if (p1 == "ro.serialno") {
-            alertSend("获取设备序列号", "获取(" + p1 + ")，值为：" + temp);
-        }
-        if (p1 == "ro.build.display.id") {
-            alertSend("获取版本号", "获取(" + p1 + ")，值为：" + temp);
-        }
-        //MEID
-        if (p1 == "ril.cdma.meid") {
-            alertSend("获取MEID", "获取(" + p1 + ")，值为：" + temp);
-        }
-        //手机型号
-        if (p1 == "ro.product.model") {
-            alertSend("获取手机型号", "获取(" + p1 + ")，值为：" + temp);
-        }
-        //手机厂商
-        if (p1 == "ro.product.manufacturer") {
-            alertSend("获取手机厂商", "获取(" + p1 + ")，值为：" + temp);
-        }
+// 系统信息(AndroidId/标识/content敏感信息)
+function getSystemData() {
+    var action = '获取系统信息';
 
-        return temp;
-    }
+    hook('android.provider.Settings$Secure', [
+        {'methodName': 'getString', 'action': action, 'messages': '获取安卓ID'}
+    ]);
 
-    SystemProperties.get.overload('java.lang.String', 'java.lang.String').implementation = function (p1, p2) {
-        var temp = this.get(p1, p2)
+    hook('android.os.Build', [
+        {'methodName': 'getSerial', 'action': action, 'messages': '获取设备序列号'},
+    ]);
 
-        if (p1 == "ro.serialno") {
-            alertSend("获取设备序列号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
-        }
-        if (p1 == "ro.build.display.id") {
-            alertSend("获取版本号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
-        }
-        //MEID
-        if (p1 == "ril.cdma.meid") {
-            alertSend("获取MEID", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
-        }
-        //手机型号
-        if (p1 == "ro.product.model") {
-            alertSend("获取手机型号", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
-        }
-        //手机厂商
-        if (p1 == "ro.product.manufacturer") {
-            alertSend("获取手机厂商", "获取(" + p1 + " 、 " + p2 + ")，值为：" + temp);
-        }
-        return temp;
-    }
+    hook('android.os.Build', [
+        {'methodName': 'getSerial', 'action': action, 'messages': '获取设备序列号'},
+    ]);
 
-    SystemProperties.getInt.overload('java.lang.String', 'int').implementation = function (p1, p2) {
-        var temp = this.getInt(p1, p2)
-        if (p1 == "ro.build.version.sdk") {
-            alertSend("获取SDK版本号", "获取(" + p1 + ")，值为：" + temp);
-        }
-        return temp;
-    }
-}
+    hook('android.app.admin.DevicePolicyManager', [
+        {'methodName': 'getWifiMacAddress', 'action': action, 'messages': '获取mac地址'},
+    ]);
 
-//获取content敏感信息
-function getContentProvider() {
+    hook('android.content.ClipboardManager', [
+        {'methodName': 'getPrimaryClip', 'action': action, 'messages': '读取剪切板信息'},
+    ]);
+
+    //获取content敏感信息
     try {
         // 通讯录内容
-        var ContactsContract = Java.use("android.provider.ContactsContract");
-        var contact_authority = ContactsContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+        var ContactsContract = Java.use('android.provider.ContactsContract');
+        var contact_authority = ContactsContract.class.getDeclaredField('AUTHORITY').get('java.lang.Object');
     } catch (e) {
         console.log(e)
     }
     try {
         // 日历内容
-        var CalendarContract = Java.use("android.provider.CalendarContract");
-        var calendar_authority = CalendarContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+        var CalendarContract = Java.use('android.provider.CalendarContract');
+        var calendar_authority = CalendarContract.class.getDeclaredField('AUTHORITY').get('java.lang.Object');
     } catch (e) {
         console.log(e)
     }
     try {
         // 浏览器内容
-        var BrowserContract = Java.use("android.provider.BrowserContract");
-        var browser_authority = BrowserContract.class.getDeclaredField("AUTHORITY").get('java.lang.Object');
+        var BrowserContract = Java.use('android.provider.BrowserContract');
+        var browser_authority = BrowserContract.class.getDeclaredField('AUTHORITY').get('java.lang.Object');
     } catch (e) {
         console.log(e)
     }
     try {
-        var ContentResolver = Java.use("android.content.ContentResolver");
-        ContentResolver.query.overload('android.net.Uri', '[Ljava.lang.String;', 'android.os.Bundle', 'android.os.CancellationSignal').implementation = function (p1, p2, p3, p4) {
-            var temp = this.query(p1, p2, p3, p4);
-            if (p1.toString().indexOf(contact_authority) != -1) {
-                alertSend("获取content敏感信息", "获取手机通信录内容");
-            } else if (p1.toString().indexOf(calendar_authority) != -1) {
-                alertSend("获取content敏感信息", "获取日历内容");
-            } else if (p1.toString().indexOf(browser_authority) != -1) {
-                alertSend("获取content敏感信息", "获取浏览器内容");
+        // 相册内容
+        var MediaStore = Java.use('android.provider.MediaStore');
+        var media_authority = MediaStore.class.getDeclaredField('AUTHORITY').get('java.lang.Object');
+    } catch (e) {
+        console.log(e)
+    }
+    try {
+        var ContentResolver = Java.use('android.content.ContentResolver');
+        var queryLength = ContentResolver.query.overloads.length;
+        for (var i = 0; i < queryLength; i++) {
+            ContentResolver.query.overloads[i].implementation = function () {
+                var temp = this.query.apply(this, arguments);
+                if (arguments[0].toString().indexOf(contact_authority) != -1) {
+                    alertSend(action, '获取手机通信录内容', '');
+                } else if (arguments[0].toString().indexOf(calendar_authority) != -1) {
+                    alertSend(action, '获取日历内容', '');
+                } else if (arguments[0].toString().indexOf(browser_authority) != -1) {
+                    alertSend(action, '获取浏览器内容', '');
+                } else if (arguments[0].toString().indexOf(media_authority) != -1) {
+                    alertSend(action, '获取相册内容', '');
+                }
+                return temp;
             }
-            return temp;
         }
     } catch (e) {
-        console.log(e)
+        console.log(e);
         return
-    }
-
-}
-
-// 获取安卓ID
-function getAndroidId() {
-    try {
-        var SettingsSecure = Java.use("android.provider.Settings$Secure");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    SettingsSecure.getString.implementation = function (p1, p2) {
-        if (p2.indexOf("android_id") < 0) {
-            return this.getString(p1, p2);
-        }
-        var temp = this.getString(p1, p2);
-        alertSend("获取Android ID", "参数为：" + p2 + "，获取到的ID为：" + temp);
-        return temp;
     }
 }
 
 //获取其他app信息
 function getPackageManager() {
+    var action = '获取其他app信息';
+
+    hook('android.content.pm.PackageManager', [
+        {'methodName': 'getInstalledPackages', 'action': action, 'messages': 'APP获取了其他app信息'},
+        {'methodName': 'getInstalledApplications', 'action': action, 'messages': 'APP获取了其他app信息'}
+    ]);
+
+    hook('android.app.ApplicationPackageManager', [
+        {'methodName': 'getInstalledPackages', 'action': action, 'messages': 'APP获取了其他app信息'},
+        {'methodName': 'getInstalledApplications', 'action': action, 'messages': 'APP获取了其他app信息'},
+        {'methodName': 'queryIntentActivities', 'action': action, 'messages': 'APP获取了其他app信息'},
+    ]);
+
+    hook('android.app.ActivityManager', [
+        {'methodName': 'getRunningAppProcesses', 'action': action, 'messages': '获取了正在运行的App'}
+    ]);
+
+    //getApplicationInfo
     try {
-        var PackageManager = Java.use("android.content.pm.PackageManager");
-        PackageManager.getInstalledPackages.overload('int').implementation = function (p1) {
-            var temp = this.getInstalledPackages(p1);
-            alertSend("获取其他app信息", "1获取的数据为：" + temp);
-            return temp;
-        };
-        PackageManager.getInstalledApplications.overload('int').implementation = function (p1) {
-            var temp = this.getInstalledApplications(p1);
-            alertSend("获取其他app信息", "getInstalledApplications获取的数据为：" + temp);
-            return temp;
-        };
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var ApplicationPackageManager = Java.use("android.app.ApplicationPackageManager");
-        ApplicationPackageManager.getInstalledPackages.overload('int').implementation = function (p1) {
-            var temp = this.getInstalledPackages(p1);
-            alertSend("获取其他app信息", "getInstalledPackages获取的数据为：" + temp);
-            return temp;
-        };
-        ApplicationPackageManager.getInstalledApplications.overload('int').implementation = function (p1) {
-            var temp = this.getInstalledApplications(p1);
-            alertSend("获取其他app信息", "getInstalledApplications获取的数据为：" + temp);
-            return temp;
-        };
-        ApplicationPackageManager.queryIntentActivities.implementation = function (p1, p2) {
-            var temp = this.queryIntentActivities(p1, p2);
-            alertSend("获取其他app信息", "参数为：" + p1 + p2 + "，queryIntentActivities获取的数据为：" + temp);
-            return temp;
-        };
-        ApplicationPackageManager.getApplicationInfo.implementation = function (p1, p2) {
+        var _ApplicationPackageManager = Java.use('android.app.ApplicationPackageManager');
+        _ApplicationPackageManager.getApplicationInfo.implementation = function (p1, p2) {
             var temp = this.getApplicationInfo(p1, p2);
             var string_to_recv;
             // 判断是否为自身应用，是的话不记录
-            send({"type": "app_name", "data": p1});
+            send({'type': 'app_name', 'data': p1});
             recv(function (received_json_object) {
                 string_to_recv = received_json_object.my_data;
             }).wait();
-
             if (string_to_recv) {
-                alertSend("获取其他app信息", "getApplicationInfo获取的数据为：" + temp);
+                alertSend(action, 'getApplicationInfo获取的数据为：' + temp, '');
             }
-            return temp;
-        };
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var ActivityManager = Java.use("android.app.ActivityManager");
-        ActivityManager.getRunningAppProcesses.implementation = function () {
-            var temp = this.getRunningAppProcesses();
-            alertSend("获取其他app信息", "获取了正在运行的App");
             return temp;
         };
     } catch (e) {
@@ -288,48 +265,69 @@ function getPackageManager() {
 
 // 获取位置信息
 function getGSP() {
-    try {
-        var locationManager = Java.use("android.location.LocationManager");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    locationManager.getLastKnownLocation.overload("java.lang.String").implementation = function (p1) {
-        var temp = this.getLastKnownLocation(p1);
-        alertSend("获取位置信息", "获取位置信息，参数为：" + p1)
-        return temp;
-    }
+    var action = '获取位置信息';
 
-    locationManager.requestLocationUpdates.overload("java.lang.String", "long", "float", "android.location.LocationListener").implementation = function (p1, p2, p3, p4) {
-        var temp = this.requestLocationUpdates(p1, p2, p3, p4);
-        alertSend("获取位置信息", "获取位置信息");
-        return temp;
-    }
-
+    hook('android.location.LocationManager', [
+        {'methodName': 'requestLocationUpdates', 'action': action, 'messages': action},
+        {'methodName': 'getLastKnownLocation', 'action': action, 'messages': action},
+    ]);
 }
 
 // 调用摄像头(hook，防止静默拍照)
 function getCamera() {
-    try {
-        var Camera = Java.use("android.hardware.Camera");
-    } catch (e) {
-        console.log(e)
-        return
-    }
-    Camera.open.overload("int").implementation = function (p1) {
-        var temp = this.open(p1);
-        alertSend("调用摄像头", "调用摄像头id：" + p1.toString());
-        return temp;
-    }
+    var action = '调用摄像头';
+
+    hook('android.hardware.Camera', [
+        {'methodName': 'open', 'action': action, 'messages': action},
+    ]);
+
+    hook('android.hardware.camera2.CameraManager', [
+        {'methodName': 'openCamera', 'action': action, 'messages': action},
+    ]);
+
+    hook('androidx.camera.core.ImageCapture', [
+        {'methodName': 'takePicture', 'action': action, 'messages': '调用摄像头拍照'},
+    ]);
+
 }
 
 //获取网络信息
 function getNetwork() {
-    try {
-        var WifiInfo = Java.use("android.net.wifi.WifiInfo");
+    var action = '获取网络信息';
 
+    hook('android.net.wifi.WifiInfo', [
+        {'methodName': 'getMacAddress', 'action': action, 'messages': '获取Mac地址'},
+        {'methodName': 'getSSID', 'action': action, 'messages': '获取wifi SSID'},
+        {'methodName': 'getBSSID', 'action': action, 'messages': '获取wifi BSSID'},
+    ]);
+
+    hook('android.net.wifi.WifiManager', [
+        {'methodName': 'getConnectionInfo', 'action': action, 'messages': '获取wifi信息'},
+        {'methodName': 'getConfiguredNetworks', 'action': action, 'messages': '获取wifi信息'},
+        {'methodName': 'getScanResults', 'action': action, 'messages': '获取wifi信息'},
+    ]);
+
+    hook('java.net.InetAddress', [
+        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取IP地址'}
+    ]);
+
+    hook('java.net.NetworkInterface', [
+        {'methodName': 'getHardwareAddress', 'action': action, 'messages': '获取Mac地址'}
+    ]);
+
+    hook('android.net.NetworkInfo', [
+        {'methodName': 'getType', 'action': action, 'messages': '获取网络类型'},
+        {'methodName': 'getTypeName', 'action': action, 'messages': '获取网络类型名称'},
+        {'methodName': 'getExtraInfo', 'action': action, 'messages': '获取网络名称'},
+        {'methodName': 'isAvailable', 'action': action, 'messages': '获取网络是否可用'},
+        {'methodName': 'isConnected', 'action': action, 'messages': '获取网络是否连接'}
+    ]);
+
+    // ip地址
+    try {
+        var _WifiInfo = Java.use('android.net.wifi.WifiInfo');
         //获取ip
-        WifiInfo.getIpAddress.implementation = function () {
+        _WifiInfo.getIpAddress.implementation = function () {
             var temp = this.getIpAddress();
             var _ip = new Array();
             _ip[0] = (temp >>> 24) >>> 0;
@@ -337,97 +335,7 @@ function getNetwork() {
             _ip[2] = (temp << 16) >>> 24;
             _ip[3] = (temp << 24) >>> 24;
             var _str = String(_ip[3]) + "." + String(_ip[2]) + "." + String(_ip[1]) + "." + String(_ip[0]);
-
-            alertSend("获取网络信息", "获取IP地址：" + _str);
-            return temp;
-        }
-        //获取mac地址
-        WifiInfo.getMacAddress.implementation = function () {
-            var temp = this.getMacAddress();
-            alertSend("获取Mac地址", "获取到的Mac地址: " + temp);
-            return temp;
-        }
-
-        WifiInfo.getSSID.implementation = function () {
-            var temp = this.getSSID();
-            alertSend("获取wifi SSID", "获取到的SSID: " + temp);
-            return temp;
-        }
-
-        WifiInfo.getBSSID.implementation = function () {
-            var temp = this.getBSSID();
-            alertSend("获取wifi BSSID", "获取到的BSSID: " + temp);
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var WifiManager = Java.use("android.net.wifi.WifiManager");
-
-        // 获取wifi信息
-        WifiManager.getConnectionInfo.implementation = function () {
-            var temp = this.getConnectionInfo();
-            alertSend("获取wifi信息", "获取wifi信息");
-            return temp;
-        };
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var InetAddress = Java.use("java.net.InetAddress");
-        //获取IP
-        InetAddress.getHostAddress.implementation = function () {
-            var temp = this.getHostAddress();
-
-            alertSend("获取网络信息", "获取IP地址：" + temp.toString());
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var NetworkInterface = Java.use("java.net.NetworkInterface");
-
-        //获取mac
-        NetworkInterface.getHardwareAddress.overload().implementation = function () {
-            var temp = this.getHardwareAddress();
-            alertSend("获取Mac地址", "获取到的Mac地址: " + temp);
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var NetworkInfo = Java.use("android.net.NetworkInfo");
-
-        NetworkInfo.getType.implementation = function () {
-            var temp = this.getType();
-            alertSend("获取网络信息", "获取网络类型：" + temp.toString());
-            return temp;
-        }
-
-        NetworkInfo.getTypeName.implementation = function () {
-            var temp = this.getTypeName();
-            alertSend("获取网络信息", "获取网络类型名称：" + temp);
-            return temp;
-        }
-
-        NetworkInfo.getExtraInfo.implementation = function () {
-            var temp = this.getExtraInfo();
-            alertSend("获取网络信息", "获取网络名称：" + temp);
-            return temp;
-        }
-
-        NetworkInfo.isAvailable.implementation = function () {
-            var temp = this.isAvailable();
-            alertSend("获取网络信息", "获取网络是否可用：" + temp.toString());
-            return temp;
-        }
-
-        NetworkInfo.isConnected.implementation = function () {
-            var temp = this.isConnected();
-            alertSend("获取网络信息", "获取网络是否连接：" + temp.toString());
+            alertSend(action, '获取IP地址：' + _str, '');
             return temp;
         }
     } catch (e) {
@@ -437,107 +345,55 @@ function getNetwork() {
 
 //获取蓝牙设备信息
 function getBluetooth() {
-    try {
-        var BluetoothDevice = Java.use("android.bluetooth.BluetoothDevice");
+    var action = '获取蓝牙设备信息';
 
-        //获取蓝牙设备名称
-        BluetoothDevice.getName.overload().implementation = function () {
-            var temp = this.getName();
-            alertSend("获取蓝牙信息", "获取到的蓝牙设备名称: " + temp)
-            return temp;
-        }
+    hook('android.bluetooth.BluetoothDevice', [
+        {'methodName': 'getName', 'action': action, 'messages': '获取蓝牙设备名称'},
+        {'methodName': 'getAddress', 'action': action, 'messages': '获取蓝牙设备mac'},
+    ]);
 
-        //获取蓝牙设备mac
-        BluetoothDevice.getAddress.implementation = function () {
-            var temp = this.getAddress();
-            alertSend("获取蓝牙信息", "获取到的蓝牙设备mac: " + temp)
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        var BluetoothAdapter = Java.use("android.bluetooth.BluetoothAdapter");
-
-        //获取蓝牙设备名称
-        BluetoothAdapter.getName.implementation = function () {
-            var temp = this.getName();
-            alertSend("获取蓝牙信息", "获取到的蓝牙设备名称: " + temp)
-            return temp;
-        };
-    } catch (e) {
-        console.log(e)
-    }
-
+    hook('android.bluetooth.BluetoothAdapter', [
+        {'methodName': 'getName', 'action': action, 'messages': '获取蓝牙设备名称'}
+    ]);
 }
 
-//获取基站信息
-function getCidorLac() {
-    try {
-        // 电信卡cid lac
-        var CdmaCellLocation = Java.use("android.telephony.cdma.CdmaCellLocation");
+function customHook() {
+    var action = '用户自定义hook';
 
-        CdmaCellLocation.getBaseStationId.implementation = function () {
-            var temp = this.getBaseStationId();
-            alertSend("获取基站信息", "获取到的cid: " + temp);
-            return temp
-        }
-        CdmaCellLocation.getNetworkId.implementation = function () {
-            var temp = this.getNetworkId();
-            alertSend("获取基站信息", "获取到的lac: " + temp);
-            return temp
-        }
-    } catch (e) {
-        console.log(e)
-    }
-    try {
-        // 移动 联通卡 cid/lac
-        var GsmCellLocation = Java.use("android.telephony.gsm.GsmCellLocation");
-
-        GsmCellLocation.getCid.implementation = function () {
-            var temp = this.getCid();
-            alertSend("获取基站信息", "获取到的cid: " + temp);
-            return temp
-        }
-        GsmCellLocation.getLac.implementation = function () {
-            var temp = this.getLac();
-            alertSend("获取基站信息", "获取到的lac: " + temp);
-            return temp
-        }
-    } catch (e) {
-        console.log(e)
-    }
-
+    //自定义hook函数，可自行添加。格式如下：
+    // hook('com.zhengjim.myapplication.HookTest', [
+    //     {'methodName': 'getPassword', 'action': action, 'messages': '获取zhengjim密码'},
+    //     {'methodName': 'getUser', 'action': action, 'messages': '获取zhengjim用户名'},
+    // ]);
 }
-
 
 function useModule(moduleList) {
     var _module = {
-        "permission": [checkRequestPermission],
-        "phone": [getPhoneState, getCidorLac],
-        "system": [getSystemProperties, getContentProvider, getAndroidId],
-        "app": [getPackageManager],
-        "location": [getGSP],
-        "network": [getNetwork],
-        "camera": [getCamera],
-        "bluetooth": [getBluetooth],
+        'permission': [checkRequestPermission],
+        'phone': [getPhoneState],
+        'system': [getSystemData],
+        'app': [getPackageManager],
+        'location': [getGSP],
+        'network': [getNetwork],
+        'camera': [getCamera],
+        'bluetooth': [getBluetooth],
+        'custom': [customHook]
     };
-    var _m = ['permission', 'phone', 'system', 'app', 'location', 'network', 'camera', 'bluetooth'];
-    if (moduleList['type'] !== "all") {
+    var _m = Object.keys(_module);
+    if (moduleList['type'] !== 'all') {
         var input_module_data = moduleList['data'].split(',');
         for (i = 0; i < input_module_data.length; i++) {
             if (_m.indexOf(input_module_data[i]) === -1) {
-                send({"type": "noFoundModule", 'data': input_module_data[i]})
+                send({'type': 'noFoundModule', 'data': input_module_data[i]})
                 return
             }
         }
     }
-
     switch (moduleList['type']) {
-        case "use":
+        case 'use':
             _m = input_module_data;
             break;
-        case "nouse":
+        case 'nouse':
             for (var i = 0; i < input_module_data.length; i++) {
                 for (var j = 0; j < _m.length; j++) {
                     if (_m[j] == input_module_data[i]) {
@@ -558,8 +414,9 @@ function useModule(moduleList) {
 function main() {
     try {
         Java.perform(function () {
-            console.log("合规检测敏感接口开始监控...");
+            console.log('[*] 隐私合规检测敏感接口开始监控...');
             send({"type": "isHook"})
+            console.log('[*] 检测到安卓版本：' + Java.androidVersion);
             var moduleList;
             recv(function (received_json_object) {
                 moduleList = received_json_object.use_module;

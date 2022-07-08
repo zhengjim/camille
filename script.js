@@ -12,7 +12,6 @@ var ByPassTracerPid = function () {
         return retval;
     }, 'pointer', ['pointer', 'int', 'pointer']));
 };
-setImmediate(ByPassTracerPid);
 
 // 获取调用链
 function getStackTrace() {
@@ -427,6 +426,8 @@ function main() {
         console.log(e)
     }
 }
+// 绕过TracerPid检测 默认关闭，有必要时再自行打开
+//setImmediate(ByPassTracerPid);
 
 //在spawn模式下，hook系统API时如javax.crypto.Cipher建议使用setImmediate立即执行，不需要延时
 //在spawn模式下，hook应用自己的函数或含壳时，建议使用setTimeout并给出适当的延时(500~5000)

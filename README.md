@@ -18,6 +18,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 
 2022-06-22：修复程序异常退出、冗余度高、hook接口不全有遗落、新增多个Android版本接口；封装hook方法，新增用户自定义hook方法。
 
+2022-07-08: 默认不开启绕过TracerPid,添加attach hook，避免有些加固包不能hook问题。
+
 下载：
 
 ```
@@ -64,6 +66,13 @@ python camille.py com.zhengjim.myapplication -t 3
 
 ![img_1.png](images/img4.png)
 
+- -ia：使用attach hook
+
+假如还是hook不上，可以使用`-ia`，指定包名或运行进程ID。 有些包有同名进程，frida会hook失败，需要使用进程ID。
+
+找进程ID，进入安卓运行`ps -A | grep com.zhengjim.myapplication`
+
+![img_6.png](images/img6.png)
 
 - -u： 扫描指定模块。与命令`-nu`互斥。多个模块用','隔开。例如：phone,permission
 

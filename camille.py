@@ -57,13 +57,14 @@ def show_banner():
         pass
 
 
-def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None):
+def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
     :param wait_time: 延迟hook，避免加壳
     :param is_show: 是否实时显示告警
     :param execl_file 导出文件
+    :param isattach 使用attach hook
 
     :return:
     """
@@ -114,7 +115,7 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
             device = frida.get_usb_device()
         except:
             device = frida.get_remote_device()
-        pid = device.spawn([app_name])
+        pid = app_name if isattach else device.spawn([app_name])
     except Exception as e:
         print("[*] hook error")
         print(e)
@@ -173,7 +174,8 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None)
     script.load()
     time.sleep(1)
     try:
-        device.resume(pid)
+        if not isattach:
+            device.resume(pid)
     except Exception as e:
         print("[*] hook error")
         print(e)
@@ -200,11 +202,14 @@ if __name__ == '__main__':
     show_banner()
 
     parser = argparse.ArgumentParser(description="App privacy compliance testing.")
-    parser.add_argument("package", help="APP_NAME ex: com.test.demo01 ")
+    parser.add_argument("package", help="APP_NAME or process ID ex: com.test.demo01 、12345")
     parser.add_argument("--time", "-t", default=0, type=int, help="Delayed hook, the number is in seconds ex: 5")
     parser.add_argument("--noshow", "-ns", required=False, action="store_const", default=True, const=False,
                         help="Showing the alert message")
     parser.add_argument("--file", "-f", metavar="<path>", required=False, help="Name of Excel file to write")
+    parser.add_argument("--isattach", "-ia", required=False, action="store_const", default=False, const=True,
+                        help="use attach hook")
+
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument("--use", "-u", required=False,
@@ -223,4 +228,5 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    frida_hook(args.package, use_module, args.time, args.noshow, args.file)
+    process = int(args.package) if args.package.isdigit() else args.package
+    frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach)

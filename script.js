@@ -235,6 +235,8 @@ function getPackageManager() {
         {'methodName': 'getInstalledPackages', 'action': action, 'messages': 'APP获取了其他app信息'},
         {'methodName': 'getInstalledApplications', 'action': action, 'messages': 'APP获取了其他app信息'},
         {'methodName': 'queryIntentActivities', 'action': action, 'messages': 'APP获取了其他app信息'},
+        {'methodName': 'getInstallerPackageName', 'action': action, 'messages': 'APP获取了其他app信息'},
+        {'methodName': 'getPackageInfoAsUser', 'action': action, 'messages': 'APP获取了其他app信息'},
     ]);
 
     hook('android.app.ActivityManager', [

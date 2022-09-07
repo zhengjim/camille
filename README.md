@@ -199,6 +199,13 @@ hook('com.zhengjim.myapplication.HookTest', [
 - https://github.com/r0ysue/r0capture/
 - https://github.com/ChenJunsen/Hegui3.0
 
+
+## 讨论群
+
+感谢[@You-guess-guess](https://github.com/You-guess-guess) 提供的App合规检测交流群，有需要的可以加群交流~
+
+![](images/qun.jpg)
+
 ## Stargazers over time
 
 [![Top Langs](https://profile-counter.glitch.me/zhengjim/count.svg)](https://www.zhengjim.com)

@@ -206,7 +206,7 @@ hook('com.zhengjim.myapplication.HookTest', [
 
 感谢[@You-guess-guess](https://github.com/You-guess-guess) 提供的App合规检测交流群，有需要的可以加群交流~
 
-![](images/qun.jpg)
+![](images/qun.png)
 
 ## Stargazers over time
 

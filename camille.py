@@ -57,7 +57,7 @@ def show_banner():
         pass
 
 
-def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False):
+def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
@@ -65,6 +65,7 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     :param is_show: 是否实时显示告警
     :param execl_file 导出文件
     :param isattach 使用attach hook
+    :param external_script 加载外部脚本文件
 
     :return:
     """
@@ -161,7 +162,15 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         content_style.alignment = alignment
         content_style.alignment.wrap = 1
 
-    with open("./script.js", encoding="utf-8") as f:
+    if external_script is not None:
+        if os.path.isabs(external_script):
+            external_script = os.path.abspath(external_script)
+        else:
+            external_script = os.path.join(os.getcwd(), external_script)
+    else:
+        external_script = os.path.join(os.getcwd(), 'data/script.js')
+    script_path = external_script if os.path.isfile(external_script) else './script.js'
+    with open(script_path, encoding="utf-8") as f:
         script_read = f.read()
 
     if wait_time:
@@ -216,6 +225,8 @@ if __name__ == '__main__':
                        help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
+    group.add_argument("--external-script", "-es", required=False,
+                       help="load external frida script js, default: ./data/script.js")
 
     args = parser.parse_args()
     # 全局变量
@@ -229,4 +240,4 @@ if __name__ == '__main__':
         use_module = {"type": "nouse", "data": args.nouse}
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach)
+    frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

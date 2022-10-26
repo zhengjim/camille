@@ -35,6 +35,22 @@ python camille.py -h
 
 ![img.png](images/img.png)
 
+## PyInstaller 打包二进制可执行文件
+
+目前仅在 Windows 下测试过，其他平台请自行测试能否正常使用~
+
+```shell
+pyinstaller -F .\camille.py -p .\venv\Lib\site-packages\ -i .\images\icon.png --add-data "script.js;.\\script.js"
+```
+
+**可能出现的问题：**
+
+ImportError: DLL load failed while importing _frida: %1 不是有效的 Win32 应用程序。
+
+**解决方案：**
+
+切换项目所用的 Python 环境为 32 位，移除 venv 后重新初始化项目环境为 Python 32 位即可，这是 PyInstaller 的问题。
+
 ## 用法
 
 简单使用：

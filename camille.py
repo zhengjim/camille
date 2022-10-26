@@ -116,6 +116,9 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         except:
             device = frida.get_remote_device()
         pid = app_name if isattach else device.spawn([app_name])
+        # 这里不能在 device.attach 后再 resume，会卡住 app 或导致 app 闪退
+        if not isattach:
+            device.resume(pid)
     except Exception as e:
         print("[*] hook error")
         print(e)
@@ -173,13 +176,6 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     script.on("message", my_message_handler)
     script.load()
     time.sleep(1)
-    try:
-        if not isattach:
-            device.resume(pid)
-    except Exception as e:
-        print("[*] hook error")
-        print(e)
-        exit()
 
     wait_time += 1
     time.sleep(wait_time)

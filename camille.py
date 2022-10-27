@@ -162,14 +162,24 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         content_style.alignment = alignment
         content_style.alignment.wrap = 1
 
-    if external_script is not None:
+    if external_script:
         if os.path.isabs(external_script):
             external_script = os.path.abspath(external_script)
         else:
             external_script = os.path.join(os.getcwd(), external_script)
     else:
-        external_script = os.path.join(os.getcwd(), 'data/script.js')
-    script_path = external_script if os.path.isfile(external_script) else './script.js'
+        external_script = os.path.join(os.getcwd(), 'script.js')
+    if os.path.isfile(external_script):
+        script_path = external_script
+    else:
+        # TODO 修复：不知道为啥这里 './script.js' 用 PyInstaller 打包后读取不到内置脚本
+        script_path = './script.js'
+        not_exists_log = 'the external script file \'%s\' doesn\'t exists' % external_script
+        if os.path.isfile(os.path.abspath(script_path)):
+            print('Warning: %s，loading built-in script...' % not_exists_log)
+        else:
+            print('Error: %s!' % not_exists_log)
+            exit(1)
     with open(script_path, encoding="utf-8") as f:
         script_read = f.read()
 
@@ -226,7 +236,7 @@ if __name__ == '__main__':
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--external-script", "-es", required=False,
-                       help="load external frida script js, default: ./data/script.js")
+                       help="load external frida script js, default: ./script.js")
 
     args = parser.parse_args()
     # 全局变量

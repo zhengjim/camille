@@ -49,7 +49,15 @@ ImportError: DLL load failed while importing _frida: %1 不是有效的 Win32 �
 
 **解决方案：**
 
-切换项目所用的 Python 环境为 32 位，移除 venv 后重新初始化项目环境为 Python 32 位即可，这是 PyInstaller 的问题。
+切换项目所用的 Python 环境为 32 位，移除 venv 后重新初始化项目环境为 Python 32 位即可。
+
+**问题原因：**
+
+这是 PyInstaller 与项目环境不一致的问题。
+
+我安装 PyInstaller 的时候，系统的 Python 环境是 32 位，导致 PyInstaller 也是 32 位。
+
+后来装了 64 位的 Python，这个项目环境初始化就是用 64 位 Python，环境冲突导致了这个问题。
 
 ## 用法
 

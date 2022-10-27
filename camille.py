@@ -1,5 +1,6 @@
 import frida
 import sys
+from sys import exit
 import time
 import argparse
 import signal

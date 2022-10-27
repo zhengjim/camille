@@ -57,6 +57,12 @@ def show_banner():
         pass
 
 
+# 生成资源文件目录访问路径
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+
 def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
@@ -172,8 +178,7 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     if os.path.isfile(external_script):
         script_path = external_script
     else:
-        # TODO 修复：不知道为啥这里 './script.js' 用 PyInstaller 打包后读取不到内置脚本
-        script_path = './script.js'
+        script_path = resource_path('./script.js')
         not_exists_log = 'the external script file \'%s\' doesn\'t exists' % external_script
         if os.path.isfile(os.path.abspath(script_path)):
             print('Warning: %s，loading built-in script...' % not_exists_log)

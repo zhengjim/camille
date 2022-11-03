@@ -51,24 +51,42 @@ function hookMethod(targetClass, targetMethod, action, messages) {
     } catch (e) {
         return false;
     }
-    try {
-        var overloadCount = _Class[targetMethod].overloads.length;
-    } catch (e) {
-        console.log(e)
-        console.log('[*] hook(' + targetMethod + ')方法失败,请检查该方法是否存在！！！');
-        return false;
-    }
-    for (var i = 0; i < overloadCount; i++) {
-        _Class[targetMethod].overloads[i].implementation = function () {
-            var temp = this[targetMethod].apply(this, arguments);
-            var arg = '';
-            for (var j = 0; j < arguments.length; j++) {
-                arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
+
+    if (targetMethod == '$init') {
+        var overloadCount = _Class.$init.overloads.length;
+        for (var i = 0; i < overloadCount; i++) {
+            _Class.$init.overloads[i].implementation = function () {
+                var temp = this.$init.apply(this, arguments);
+                var arg = '';
+                for (var j = 0; j < arguments.length; j++) {
+                    arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
+                }
+                if (arg.length == 0) arg = '无参数';
+                else arg = arg.slice(0, arg.length - 1);
+                alertSend(action, messages, arg);
+                return temp;
             }
-            if (arg.length == 0) arg = '无参数';
-            else arg = arg.slice(0, arg.length - 1);
-            alertSend(action, messages, arg);
-            return temp;
+        }
+    } else {
+        try {
+            var overloadCount = _Class[targetMethod].overloads.length;
+        } catch (e) {
+            console.log(e)
+            console.log('[*] hook(' + targetMethod + ')方法失败,请检查该方法是否存在！！！');
+            return false;
+        }
+        for (var i = 0; i < overloadCount; i++) {
+            _Class[targetMethod].overloads[i].implementation = function () {
+                var temp = this[targetMethod].apply(this, arguments);
+                var arg = '';
+                for (var j = 0; j < arguments.length; j++) {
+                    arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
+                }
+                if (arg.length == 0) arg = '无参数';
+                else arg = arg.slice(0, arg.length - 1);
+                alertSend(action, messages, arg);
+                return temp;
+            }
         }
     }
     return true;
@@ -86,7 +104,7 @@ function hook(targetClass, methodData) {
     // 排查掉不存在的方法，用于各个android版本不存在方法报错问题。
     methodData.forEach(function (methodData) {
         for (var method of methods) {
-            if (method.toString().indexOf(methodData['methodName']) != -1) {
+            if (method.toString().indexOf(methodData['methodName']) != -1 || methodData['methodName'] == '$init') {
                 hookMethod(targetClass, methodData['methodName'], methodData['action'], methodData['messages']);
                 break;
             }
@@ -235,17 +253,16 @@ function getPackageManager() {
         {'methodName': 'getInstalledPackages', 'action': action, 'messages': 'APP获取了其他app信息'},
         {'methodName': 'getInstalledApplications', 'action': action, 'messages': 'APP获取了其他app信息'},
         {'methodName': 'queryIntentActivities', 'action': action, 'messages': 'APP获取了其他app信息'},
-        {'methodName': 'getInstallerPackageName', 'action': action, 'messages': 'APP获取了其他app信息'},
-        {'methodName': 'getPackageInfoAsUser', 'action': action, 'messages': 'APP获取了其他app信息'},
     ]);
 
     hook('android.app.ActivityManager', [
         {'methodName': 'getRunningAppProcesses', 'action': action, 'messages': '获取了正在运行的App'}
     ]);
 
-    //getApplicationInfo
+    //需排除应用本身
+    var _ApplicationPackageManager = Java.use('android.app.ApplicationPackageManager');
     try {
-        var _ApplicationPackageManager = Java.use('android.app.ApplicationPackageManager');
+        //getApplicationInfo
         _ApplicationPackageManager.getApplicationInfo.implementation = function (p1, p2) {
             var temp = this.getApplicationInfo(p1, p2);
             var string_to_recv;
@@ -255,10 +272,47 @@ function getPackageManager() {
                 string_to_recv = received_json_object.my_data;
             }).wait();
             if (string_to_recv) {
-                alertSend(action, 'getApplicationInfo获取的数据为：' + temp, '');
+                alertSend(action, 'getApplicationInfo获取的数据为：' + temp, p1);
             }
             return temp;
         };
+    } catch (e) {
+        console.log(e)
+    }
+    //getPackageInfoAsUser
+    try {
+        _ApplicationPackageManager.getPackageInfoAsUser.implementation = function (p1, p2, p3) {
+            var temp = this.getPackageInfoAsUser(p1, p2, p3);
+            var string_to_recv;
+            // 判断是否为自身应用，是的话不记录
+            send({'type': 'app_name', 'data': p1});
+            recv(function (received_json_object) {
+                string_to_recv = received_json_object.my_data;
+            }).wait();
+            if (string_to_recv) {
+                alertSend(action, 'getPackageInfoAsUser获取的数据为：' + temp, p1);
+            }
+            return temp;
+        }
+    } catch (e) {
+        console.log(e)
+    }
+
+    //getInstallerPackageName
+    try {
+        _ApplicationPackageManager.getInstallerPackageName.implementation = function (p1) {
+            var temp = this.getInstallerPackageName(p1);
+            var string_to_recv;
+            // 判断是否为自身应用，是的话不记录
+            send({'type': 'app_name', 'data': p1});
+            recv(function (received_json_object) {
+                string_to_recv = received_json_object.my_data;
+            }).wait();
+            if (string_to_recv) {
+                alertSend(action, 'getInstallerPackageName获取的数据为：' + temp, p1);
+            }
+            return temp;
+        }
     } catch (e) {
         console.log(e)
     }
@@ -358,6 +412,15 @@ function getBluetooth() {
     ]);
 }
 
+//读写文件
+function getFileMessage() {
+    var action = '文件操作';
+
+    hook('java.io.RandomAccessFile', [
+        {'methodName': '$init', 'action': action, 'messages': 'RandomAccessFile写文件'}
+    ]);
+}
+
 function customHook() {
     var action = '用户自定义hook';
 
@@ -378,6 +441,7 @@ function useModule(moduleList) {
         'network': [getNetwork],
         'camera': [getCamera],
         'bluetooth': [getBluetooth],
+        'file': [getFileMessage],
         'custom': [customHook]
     };
     var _m = Object.keys(_module);
@@ -428,6 +492,7 @@ function main() {
         console.log(e)
     }
 }
+
 // 绕过TracerPid检测 默认关闭，有必要时再自行打开
 // setImmediate(ByPassTracerPid);
 

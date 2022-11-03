@@ -22,6 +22,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 
 2022-09-07：添加讨论群，新增敏感接口，感谢群里师傅@410提供。
 
+2022-11-03: 添加同意隐私合规状态(需人工确认)、第三方SDK识别、可hook构造函数，`methodName`传`'$init'`。方便大家交流，创建交流群。
+
 下载：
 
 ```
@@ -90,6 +92,7 @@ python camille.py com.zhengjim.myapplication -t 3
 |network|getNetwork|
 |camera|照相机|
 |bluetooth|蓝牙|
+|file|文件|
 |custom| 用户自定义接口|
 
 - -nu：跳过扫描指定模块。与命令`-u`互斥。多个模块用','隔开。例如：phone,permission 模块列表同上
@@ -109,6 +112,22 @@ hook('com.zhengjim.myapplication.HookTest', [
 
 `-u custom`是只检测自定义接口，如图：
 ![img.png](images/img5.png)
+
+## 是否同意隐私政策
+
+默认开启， 如不需要改功能加`-npp` 参数关闭（不开启的话就默认是同意隐私合规后）。采用半自动模式，启动后会弹出当前屏幕。
+
+![img.png](images/img7.png)
+
+同意隐私协议请`鼠标左键`点击对应同意位置如无隐私协议，如不是隐私协议界面继续获取屏幕请按键盘`n`, 退出请按`q` 
+
+![img.png](images/img8.png)
+
+![img.png](images/img9.png)
+
+查看报告
+
+![img.png](images/img10.png)
 
 ## 后记
 
@@ -206,7 +225,11 @@ hook('com.zhengjim.myapplication.HookTest', [
 
 感谢[@You-guess-guess](https://github.com/You-guess-guess) 提供的App合规检测交流群，有需要的可以加群交流~
 
-![](images/qun.png)
+为方便大家交流，创建交流群有需要的加群。后续过期加V，备注github。就会拉进群。
+
+![img.png](images/qun.png)
+
+![img.png](images/v.png)
 
 ## Stargazers over time
 

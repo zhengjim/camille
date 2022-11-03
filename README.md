@@ -227,7 +227,7 @@ hook('com.zhengjim.myapplication.HookTest', [
 
 为方便大家交流，创建交流群有需要的加群。后续过期加V，备注github。就会拉进群。
 
-![img.png](images/qun.png)
+![img.png](images/q.png)
 
 ![img.png](images/v.png)
 

@@ -2,4 +2,4 @@
 __pycache__/
 *.py[cod]
 .DS_Store
-*.png
+screen.png

@@ -419,6 +419,10 @@ function getFileMessage() {
     hook('java.io.RandomAccessFile', [
         {'methodName': '$init', 'action': action, 'messages': 'RandomAccessFile写文件'}
     ]);
+    hook('java.io.File', [
+        {'methodName': 'mkdirs', 'action': action, 'messages': '尝试写入sdcard创建小米市场审核可能不通过'},
+        {'methodName': 'mkdir', 'action': action, 'messages': '尝试写入sdcard创建小米市场审核可能不通过'}
+    ]);
 }
 
 function customHook() {

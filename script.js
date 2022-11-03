@@ -256,7 +256,8 @@ function getPackageManager() {
     ]);
 
     hook('android.app.ActivityManager', [
-        {'methodName': 'getRunningAppProcesses', 'action': action, 'messages': '获取了正在运行的App'}
+        {'methodName': 'getRunningAppProcesses', 'action': action, 'messages': '获取了正在运行的App'},
+        {'methodName': 'getRunningServiceControlPanel', 'action': action, 'messages': '获取了正在运行的服务面板'},
     ]);
 
     //需排除应用本身
@@ -325,7 +326,29 @@ function getGSP() {
     hook('android.location.LocationManager', [
         {'methodName': 'requestLocationUpdates', 'action': action, 'messages': action},
         {'methodName': 'getLastKnownLocation', 'action': action, 'messages': action},
+        {'methodName': 'getBestProvider', 'action': action, 'messages': action},
+        {'methodName': 'getGnssHardwareModelName', 'action': action, 'messages': action},
+        {'methodName': 'getGnssYearOfHardware', 'action': action, 'messages': action},
+        {'methodName': 'getProvider', 'action': action, 'messages': action},
+        {'methodName': 'requestSingleUpdate', 'action': action, 'messages': action},
     ]);
+
+    hook('android.location.Location', [
+        {'methodName': 'getAccuracy', 'action': action, 'messages': action},
+        {'methodName': 'getAltitude', 'action': action, 'messages': action},
+        {'methodName': 'getBearing', 'action': action, 'messages': action},
+        {'methodName': 'getBearingAccuracyDegrees', 'action': action, 'messages': action},
+        {'methodName': 'getElapsedRealtimeNanos', 'action': action, 'messages': action},
+        {'methodName': 'getExtras', 'action': action, 'messages': action},
+        {'methodName': 'getLatitude', 'action': action, 'messages': action},
+        {'methodName': 'getLongitude', 'action': action, 'messages': action},
+        {'methodName': 'getProvider', 'action': action, 'messages': action},
+        {'methodName': 'getSpeed', 'action': action, 'messages': action},
+        {'methodName': 'getSpeedAccuracyMetersPerSecond', 'action': action, 'messages': action},
+        {'methodName': 'getTime', 'action': action, 'messages': action},
+        {'methodName': 'getVerticalAccuracyMeters', 'action': action, 'messages': action},
+    ]);
+
 }
 
 // 调用摄像头(hook，防止静默拍照)
@@ -425,6 +448,18 @@ function getFileMessage() {
     ]);
 }
 
+//获取麦克风信息
+function getMedia() {
+    var action = '获取麦克风'
+    hook('android.media.MediaRecorder', [
+        {'methodName': 'start', 'action': action, 'messages': '获取麦克风'},
+    ]);
+    hook('android.media.AudioRecord', [
+        {'methodName': 'startRecording', 'action': action, 'messages': '获取麦克风'},
+    ]);
+}
+
+
 function customHook() {
     var action = '用户自定义hook';
 
@@ -446,6 +481,7 @@ function useModule(moduleList) {
         'camera': [getCamera],
         'bluetooth': [getBluetooth],
         'file': [getFileMessage],
+        'media': [getMedia],
         'custom': [customHook]
     };
     var _m = Object.keys(_module);

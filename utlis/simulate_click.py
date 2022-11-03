@@ -53,11 +53,8 @@ class SimulateClick:
         self.screencap()
         img = cv2.imread(self.path)
         winname = "ANDROID PHONE"
-        h, w = img.shape[0:2]
-        new_w = 720
-        new_h = int(new_w * (h / w))
         cv2.namedWindow(winname, 0)
-        img = cv2.resize(img, (new_w, new_h))
+        # img = cvv2.resize(img, (new_w, new_h))
         cv2.setMouseCallback(winname, self.on_EVENT_LBUTTONDOWN)
         while True:
             cv2.imshow(winname, img)

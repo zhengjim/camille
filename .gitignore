@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+screen.png
+
 node_modules
 build
 dist

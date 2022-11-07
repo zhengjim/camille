@@ -1,12 +1,16 @@
-import frida
-import sys
 from sys import exit
-import time
+from utlis.third_party_sdk import ThirdPartySdk
+from utlis.simulate_click import SimulateClick
+from utlis import print_msg, write_xlsx
+from multiprocessing import Process
+import multiprocessing
 import argparse
-import signal
-import os
-import xlwt
 import random
+import signal
+import frida
+import time
+import sys
+import os
 
 try:
     import click
@@ -77,8 +81,8 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     :return:
     """
 
-    # 消息处理
     def my_message_handler(message, payload):
+        """ 消息处理 """
         if message["type"] == "error":
             print(message)
             os.kill(os.getpid(), signal.SIGTERM)
@@ -91,21 +95,27 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
                 arg = data['arg']
                 messages = data['messages']
                 stacks = data['stacks']
+                subject_type = tps.is_third_party(stacks)
+
                 if is_show:
                     print("------------------------------start---------------------------------")
-                    print("[*] {0}，APP行为：{1}、行为描述：{2}、传入参数：{3}".format(
-                        alert_time, action, messages, arg.replace('\r\n', '，')))
+                    print("[*] {0}，APP行为：{1}、行为主体：{2}、行为描述：{3}、传入参数：{4}".format(
+                        alert_time, action, subject_type, messages, arg.replace('\r\n', '，')))
                     print("[*] 调用堆栈：")
                     print(stacks)
                     print("-------------------------------end----------------------------------")
                 if execl_file:
-                    global index_row
-                    worksheet.write(index_row, 0, alert_time, content_style)
-                    worksheet.write(index_row, 1, action, content_style)
-                    worksheet.write(index_row, 2, messages, content_style)
-                    worksheet.write(index_row, 3, arg, content_style)
-                    worksheet.write(index_row, 4, stacks, content_style)
-                    index_row += 1
+                    global privacy_policy_status
+                    global execl_data
+                    execl_data.append({
+                        'alert_time': alert_time,
+                        'action': action,
+                        'messages': messages,
+                        'arg': arg,
+                        'stacks': stacks,
+                        'subject_type': subject_type,
+                        'privacy_policy_status': "同意隐私政策" + privacy_policy_status.value,
+                    })
             if data['type'] == "app_name":
                 get_app_name = data['data']
                 my_data = False if get_app_name == app_name else True
@@ -115,59 +125,24 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
                 isHook = True
                 script.post({"use_module": use_module})
             if data['type'] == "noFoundModule":
-                print('[*] Not Found Module: ' + data['data'] + " . Please exit the check")
+                print_msg('Not Found Module: ' + data['data'] + " . Please exit the check")
                 session.detach()
 
     try:
         try:
+            tps = ThirdPartySdk()
             device = frida.get_usb_device()
         except:
             device = frida.get_remote_device()
         pid = app_name if isattach else device.spawn([app_name])
     except Exception as e:
-        print("[*] hook error")
-        print(e)
+        print_msg("hook error")
+        print_msg(e)
         exit()
 
     time.sleep(1)
     session = device.attach(pid)
     time.sleep(1)
-
-    if execl_file:
-        workbook = xlwt.Workbook(encoding='utf-8')
-        worksheet = workbook.add_sheet('App_privacy_compliance_testing')
-        # 标题字体
-        title_style = xlwt.XFStyle()
-        title_font = xlwt.Font()
-        title_font.bold = True  # 黑体
-        title_font.height = 30 * 11
-        title_style.font = title_font
-        # 对其方式
-        alignment = xlwt.Alignment()
-        alignment.horz = xlwt.Alignment.HORZ_CENTER
-        alignment.vert = xlwt.Alignment.VERT_CENTER
-        title_style.alignment = alignment
-
-        # 标题
-        worksheet.write(0, 0, '时间点', title_style)
-        worksheet.col(0).width = 20 * 300
-        worksheet.row(0).height_mismatch = True
-        worksheet.row(0).height = 20 * 25
-        worksheet.write(0, 1, '操作行为', title_style)
-        worksheet.col(1).width = 20 * 300
-        worksheet.write(0, 2, '行为描述', title_style)
-        worksheet.col(2).width = 20 * 400
-        worksheet.write(0, 3, '传入参数', title_style)
-        worksheet.col(3).width = 20 * 400
-        worksheet.write(0, 4, '调用堆栈', title_style)
-        worksheet.col(4).width = 20 * 1200
-
-        content_style = xlwt.XFStyle()
-        content_font = xlwt.Font()
-        content_font.height = 20 * 11
-        content_style.font = content_font
-        content_style.alignment = alignment
-        content_style.alignment.wrap = 1
 
     if external_script:
         if os.path.isabs(external_script):
@@ -202,25 +177,40 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         if not isattach:
             device.resume(pid)
     except Exception as e:
-        print("[*] hook error")
-        print(e)
+        print_msg("hook error")
+        print_msg(e)
         exit()
 
     wait_time += 1
     time.sleep(wait_time)
     if isHook:
         def stop(signum, frame):
-            print('[*] You have stoped hook.')
+            print_msg('You have stoped hook.')
             session.detach()
             if execl_file:
-                workbook.save(execl_file)
+                global execl_data
+                write_xlsx(execl_data, execl_file)
             exit()
 
         signal.signal(signal.SIGINT, stop)
         signal.signal(signal.SIGTERM, stop)
         sys.stdin.read()
     else:
-        print("[*] hook fail, try delaying hook, adjusting delay time")
+        print_msg("hook fail, try delaying hook, adjusting delay time")
+
+
+def agree_privacy(privacy_policy_status):
+    # 等待应用启动
+    time.sleep(5)
+    sc = SimulateClick('screen.png')
+    sc.run()
+    result = sc.get_result()
+    while result == 1:
+        sc = SimulateClick('screen.png')
+        sc.run()
+        result = sc.get_result()
+    if result == 2:
+        privacy_policy_status.value = '后'
 
 
 if __name__ == '__main__':
@@ -234,6 +224,8 @@ if __name__ == '__main__':
     parser.add_argument("--file", "-f", metavar="<path>", required=False, help="Name of Excel file to write")
     parser.add_argument("--isattach", "-ia", required=False, action="store_const", default=False, const=True,
                         help="use attach hook")
+    parser.add_argument("--noprivacypolicy", "-npp", required=False, action="store_const", default=False, const=True,
+                        help="close the privacy policy. after closing, default status is agree privacy policy")
 
     group = parser.add_mutually_exclusive_group()
 
@@ -247,13 +239,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # 全局变量
     isHook = False
-    index_row = 1
+
+    execl_data = []
 
     use_module = {"type": "all", "data": []}
     if args.use:
         use_module = {"type": "use", "data": args.use}
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
+
+    if args.noprivacypolicy:
+        privacy_policy_status = multiprocessing.Value('u', '后')
+    else:
+        privacy_policy_status = multiprocessing.Value('u', '前')
+        p = Process(target=agree_privacy, args=(privacy_policy_status,))
+        p.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
     frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

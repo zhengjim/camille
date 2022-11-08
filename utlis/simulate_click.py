@@ -1,11 +1,12 @@
-from utlis import print_msg
+from utlis import print_msg, resource_path
 import subprocess
 import cv2
+import os
 
 
 class SimulateClick:
     def __init__(self, path):
-        self.path = path
+        self.path = os.path.join(os.getcwd(), path)
         self.exit_signal = 0
         self.result = 0  # 0 无需隐私合规、退出、1 继续获取隐私政策、2 同意隐私合规政策
 
@@ -51,6 +52,8 @@ class SimulateClick:
     def run(self):
         """ 运行 """
         self.screencap()
+        if not os.path.isfile(self.path):
+            self.path = resource_path(self.path)
         img = cv2.imread(self.path)
         winname = "ANDROID PHONE"
         cv2.namedWindow(winname, 0)

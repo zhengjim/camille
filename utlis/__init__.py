@@ -1,5 +1,7 @@
 import time
 import xlwt
+import sys
+import os
 
 
 def now():
@@ -16,8 +18,6 @@ def print_msg(msg):
     """
 
     print("[*] {now} {msg}".format(now=now(), msg=str(msg)))
-
-
 
 
 def write_xlsx(data, file_name):
@@ -74,3 +74,9 @@ def write_xlsx(data, file_name):
         worksheet.write(index_row, 5, ed['arg'], content_style)
         worksheet.write(index_row, 6, ed['stacks'], content_style)
     workbook.save(file_name)
+
+
+# 生成资源文件目录访问路径
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    return os.path.abspath(os.path.join(base_path, relative_path))

@@ -42,7 +42,7 @@ python camille.py -h
 目前仅在 Windows 下测试过，其他平台请自行测试能否正常使用~
 
 ```shell
-pyinstaller -F .\camille.py -p .\venv\Lib\site-packages\ -i .\images\icon.png --add-data "script.js;."
+pyinstaller -F .\camille.py -p .\venv\Lib\site-packages\ -i .\images\icon.ico --add-data "script.js;." --add-data "utlis\sdk.json;.\utlis"
 ```
 
 **可能出现的问题：**

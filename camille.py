@@ -1,7 +1,7 @@
 from sys import exit
 from utlis.third_party_sdk import ThirdPartySdk
 from utlis.simulate_click import SimulateClick
-from utlis import print_msg, write_xlsx
+from utlis import print_msg, write_xlsx, resource_path
 from multiprocessing import Process
 import multiprocessing
 import argparse
@@ -60,12 +60,6 @@ def show_banner():
                 click.secho(line, fg=random.choice(colors))
     except:
         pass
-
-
-# 生成资源文件目录访问路径
-def resource_path(relative_path):
-    base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
-    return os.path.abspath(os.path.join(base_path, relative_path))
 
 
 def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
@@ -214,6 +208,9 @@ def agree_privacy(privacy_policy_status):
 
 
 if __name__ == '__main__':
+    # 下面这句必须在if下面添加
+    multiprocessing.freeze_support()
+
     show_banner()
 
     parser = argparse.ArgumentParser(description="App privacy compliance testing.")

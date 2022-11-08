@@ -64,8 +64,8 @@ def show_banner():
 
 # 生成资源文件目录访问路径
 def resource_path(relative_path):
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
+    base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    return os.path.abspath(os.path.join(base_path, relative_path))
 
 
 def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
@@ -233,8 +233,8 @@ if __name__ == '__main__':
                        help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
-    group.add_argument("--external-script", "-es", required=False,
-                       help="load external frida script js, default: ./script.js")
+    parser.add_argument("--external-script", "-es", required=False,
+                        help="load external frida script js, default: ./script.js")
 
     args = parser.parse_args()
     # 全局变量

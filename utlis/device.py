@@ -15,10 +15,10 @@ def get_device_info():
     for device in devices:
         devices_data.append({
             "id": device.id,
-            "name": device.name,
-            "type": device.type
+            "type": device.type,
+            "name": device.name
         })
-    devices_data_frame = pd.DataFrame(devices_data, columns=["id", "name", "type"])
+    devices_data_frame = pd.DataFrame(devices_data, columns=["id", "type", "name"])
     if len(devices_data_frame) != 0:
         print(devices_data_frame)
     else:
@@ -33,7 +33,7 @@ def get_device_info():
             result["thirdPartySdk"] = tps
         except:
             device = frida.get_remote_device()
-        print("[*] 当前设备：" + device.name)
+        print("[*] 当前设备 id: " + device.id)
         result["device"] = device
         return result
     except Exception as e:

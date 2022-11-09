@@ -124,7 +124,12 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
 
     tps = device_info["thirdPartySdk"]
     device = device_info["device"]
-    pid = app_name if isattach else device.spawn([app_name])
+    try:
+        pid = app_name if isattach else device.spawn([app_name])
+    except Exception as e:
+        print_msg("hook error")
+        print_msg(e)
+        exit()
 
     time.sleep(1)
     session = device.attach(pid)

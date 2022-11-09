@@ -1,7 +1,7 @@
 from sys import exit
-from utlis.third_party_sdk import ThirdPartySdk
 from utlis.simulate_click import SimulateClick
 from utlis import print_msg, write_xlsx, resource_path
+from utlis.device import get_device_info
 from multiprocessing import Process
 import multiprocessing
 import argparse
@@ -62,7 +62,7 @@ def show_banner():
         pass
 
 
-def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
+def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
@@ -122,17 +122,9 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
                 print_msg('Not Found Module: ' + data['data'] + " . Please exit the check")
                 session.detach()
 
-    try:
-        try:
-            tps = ThirdPartySdk()
-            device = frida.get_usb_device()
-        except:
-            device = frida.get_remote_device()
-        pid = app_name if isattach else device.spawn([app_name])
-    except Exception as e:
-        print_msg("hook error")
-        print_msg(e)
-        exit()
+    tps = device_info["thirdPartySdk"]
+    device = device_info["device"]
+    pid = app_name if isattach else device.spawn([app_name])
 
     time.sleep(1)
     session = device.attach(pid)
@@ -193,14 +185,14 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         print_msg("hook fail, try delaying hook, adjusting delay time")
 
 
-def agree_privacy(privacy_policy_status):
+def agree_privacy(privacy_policy_status, device_id):
     # 等待应用启动
     time.sleep(5)
-    sc = SimulateClick('screen.png')
+    sc = SimulateClick(device_id, 'screen.png')
     sc.run()
     result = sc.get_result()
     while result == 1:
-        sc = SimulateClick('screen.png')
+        sc = SimulateClick(device_id, 'screen.png')
         sc.run()
         result = sc.get_result()
     if result == 2:
@@ -252,12 +244,14 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
+    device_info = get_device_info()
+
     if args.noprivacypolicy:
         privacy_policy_status = multiprocessing.Value('u', '后')
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        p = Process(target=agree_privacy, args=(privacy_policy_status,))
+        p = Process(target=agree_privacy, args=(privacy_policy_status, device_info["device"].id))
         p.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(device_info, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

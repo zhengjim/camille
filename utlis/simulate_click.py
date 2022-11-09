@@ -1,11 +1,13 @@
 from utlis import print_msg, resource_path
+from utlis.device import get_device_info
 import subprocess
 import cv2
 import os
 
 
 class SimulateClick:
-    def __init__(self, path):
+    def __init__(self, device_id, path):
+        self.device_id = device_id
         self.path = os.path.join(os.getcwd(), path)
         self.exit_signal = 0
         self.result = 0  # 0 无需隐私合规、退出、1 继续获取隐私政策、2 同意隐私合规政策
@@ -17,10 +19,11 @@ class SimulateClick:
         :return:
         """
 
-        shells = ['adb shell rm /sdcard/camille_screen_tmp.png',
-                  'adb shell screencap -p /sdcard/camille_screen_tmp.png',
-                  'adb pull /sdcard/camille_screen_tmp.png {}'.format(self.path),
-                  'adb shell rm /sdcard/camille_screen_tmp.png']
+        device_id_cmd = "-s {}".format(self.device_id) if self.device_id is not None else ""
+        shells = ['adb {} shell rm /sdcard/camille_screen_tmp.png'.format(device_id_cmd),
+                  'adb {} shell screencap -p /sdcard/camille_screen_tmp.png'.format(device_id_cmd),
+                  'adb {} pull /sdcard/camille_screen_tmp.png {}'.format(device_id_cmd, self.path),
+                  'adb {} shell rm /sdcard/camille_screen_tmp.png'.format(device_id_cmd)]
         try:
             for shell in shells:
                 subprocess.getoutput(shell)
@@ -35,7 +38,8 @@ class SimulateClick:
         :param y: y坐标
         :return:
         """
-        shell = 'adb shell input tap {x} {y}'.format(x=x, y=y)
+        device_id_cmd = "-s {}".format(self.device_id) if self.device_id is not None else ""
+        shell = 'adb {} shell input tap {x} {y}'.format(device_id_cmd, x=x, y=y)
         try:
             subprocess.getoutput(shell)
             print("===========================确认同意隐私政策=============================")
@@ -79,5 +83,5 @@ class SimulateClick:
 
 
 if __name__ == '__main__':
-    sc = SimulateClick('screen.png')
+    sc = SimulateClick(get_device_info()["device"].id, 'screen.png')
     sc.run()

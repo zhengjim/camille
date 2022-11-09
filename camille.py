@@ -211,6 +211,13 @@ if __name__ == '__main__':
     # 下面这句必须在if下面添加
     multiprocessing.freeze_support()
 
+    # 这里要移除上一次生成的，否则报错了会用上一次的截屏结果进行显示
+    last_screen_shot = os.path.join(os.getcwd(), "screen.png")
+    if not os.path.isfile(last_screen_shot):
+        last_screen_shot = resource_path("screen.png")
+    if os.path.isfile(last_screen_shot):
+        os.remove(last_screen_shot)
+
     show_banner()
 
     parser = argparse.ArgumentParser(description="App privacy compliance testing.")

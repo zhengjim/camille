@@ -7,6 +7,7 @@ import multiprocessing
 import argparse
 import random
 import signal
+import frida
 import time
 import sys
 import os
@@ -126,6 +127,12 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
     device = device_info["device"]
     try:
         pid = app_name if isattach else device.spawn([app_name])
+    except frida.NotSupportedError as e:
+        print_msg('frida-server没有运行或下载版本错误，请排查')
+        exit()
+    except frida.ServerNotRunningError as e:
+        print_msg('frida-server没有运行或没有设备，请排查')
+        exit()
     except Exception as e:
         print_msg("hook error")
         print_msg(e)
@@ -256,6 +263,7 @@ if __name__ == '__main__':
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
         p = Process(target=agree_privacy, args=(privacy_policy_status, device_info["device"].id))
+        p.daemon = True
         p.start()
 
     process = int(args.package) if args.package.isdigit() else args.package

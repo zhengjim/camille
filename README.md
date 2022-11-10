@@ -22,6 +22,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 
 2022-09-07：添加讨论群，新增敏感接口，感谢群里师傅@410提供。
 
+2022-10-26：新增支持加载外部脚本文件，填相对路径或绝对路径均可（用于 pyinstaller 打包二进制执行文件后使用）
+
 2022-11-03: 添加同意隐私合规状态(需人工确认)、第三方SDK识别、可hook构造函数，`methodName`传`'$init'`。方便大家交流，创建交流群。 新增文件接口，感谢@LiuXinzhi94提供。 新增敏感接口，感谢群里师傅@WYY提供
 
 下载：
@@ -34,6 +36,30 @@ python camille.py -h
 ```
 
 ![img.png](images/img.png)
+
+## PyInstaller 打包二进制可执行文件
+
+目前仅在 Windows 下测试过，其他平台请自行测试能否正常使用~
+
+```shell
+pyinstaller -F .\camille.py -p .\venv\Lib\site-packages\ -i .\images\icon.ico --add-data "script.js;." --add-data "utlis\sdk.json;.\utlis"
+```
+
+**可能出现的问题：**
+
+ImportError: DLL load failed while importing _frida: %1 不是有效的 Win32 应用程序。
+
+**解决方案：**
+
+切换项目所用的 Python 环境为 32 位，移除 venv 后重新初始化项目环境为 Python 32 位即可。
+
+**问题原因：**
+
+这是 PyInstaller 与项目环境不一致的问题。
+
+我安装 PyInstaller 的时候，系统的 Python 环境是 32 位，导致 PyInstaller 也是 32 位。
+
+后来装了 64 位的 Python，这个项目环境初始化就是用 64 位 Python，环境冲突导致了这个问题。
 
 ## 用法
 

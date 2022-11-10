@@ -1,5 +1,13 @@
 from ast import literal_eval
 from utlis import print_msg
+import sys
+import os
+
+
+# 生成资源文件目录访问路径
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    return os.path.abspath(os.path.join(base_path, relative_path))
 
 
 # 第三方SDK代完善 https://blog.csdn.net/bjz2012/article/details/107172205
@@ -17,7 +25,10 @@ class ThirdPartySdk:
         """ 加载第三方sdk规则 """
         result = []
         try:
-            with open('utlis/sdk.json', 'r', encoding='utf-8') as f:
+            sdk_path = os.path.join(os.getcwd(), 'utlis/sdk.json')
+            if not os.path.isfile(sdk_path):
+                sdk_path = resource_path('utlis/sdk.json')
+            with open(sdk_path, 'r', encoding='utf-8') as f:
                 sdk_rule = f.read()
             result = literal_eval(sdk_rule)
         except Exception as e:

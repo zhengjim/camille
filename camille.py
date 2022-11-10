@@ -1,6 +1,7 @@
-from utlis.third_party_sdk import ThirdPartySdk
+from sys import exit
 from utlis.simulate_click import SimulateClick
-from utlis import print_msg, write_xlsx
+from utlis import print_msg, write_xlsx, resource_path
+from utlis.device import get_device_info
 from multiprocessing import Process
 import multiprocessing
 import argparse
@@ -61,7 +62,7 @@ def show_banner():
         pass
 
 
-def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False):
+def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
@@ -69,6 +70,7 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     :param is_show: 是否实时显示告警
     :param execl_file 导出文件
     :param isattach 使用attach hook
+    :param external_script 加载外部脚本文件
 
     :return:
     """
@@ -120,12 +122,9 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
                 print_msg('Not Found Module: ' + data['data'] + " . Please exit the check")
                 session.detach()
 
+    tps = device_info["thirdPartySdk"]
+    device = device_info["device"]
     try:
-        try:
-            tps = ThirdPartySdk()
-            device = frida.get_usb_device()
-        except:
-            device = frida.get_remote_device()
         pid = app_name if isattach else device.spawn([app_name])
     except Exception as e:
         print_msg("hook error")
@@ -136,7 +135,24 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
     session = device.attach(pid)
     time.sleep(1)
 
-    with open("./script.js", encoding="utf-8") as f:
+    if external_script:
+        if os.path.isabs(external_script):
+            external_script = os.path.abspath(external_script)
+        else:
+            external_script = os.path.join(os.getcwd(), external_script)
+    else:
+        external_script = os.path.join(os.getcwd(), 'script.js')
+    if os.path.isfile(external_script):
+        script_path = external_script
+    else:
+        script_path = resource_path('./script.js')
+        not_exists_log = 'the external script file \'%s\' doesn\'t exists' % external_script
+        if os.path.isfile(os.path.abspath(script_path)):
+            print('Warning: %s，loading built-in script...' % not_exists_log)
+        else:
+            print('Error: %s!' % not_exists_log)
+            exit(1)
+    with open(script_path, encoding="utf-8") as f:
         script_read = f.read()
 
     if wait_time:
@@ -174,14 +190,14 @@ def frida_hook(app_name, use_module, wait_time=0, is_show=True, execl_file=None,
         print_msg("hook fail, try delaying hook, adjusting delay time")
 
 
-def agree_privacy(privacy_policy_status):
+def agree_privacy(privacy_policy_status, device_id):
     # 等待应用启动
     time.sleep(5)
-    sc = SimulateClick('screen.png')
+    sc = SimulateClick(device_id, 'screen.png')
     sc.run()
     result = sc.get_result()
     while result == 1:
-        sc = SimulateClick('screen.png')
+        sc = SimulateClick(device_id, 'screen.png')
         sc.run()
         result = sc.get_result()
     if result == 2:
@@ -189,6 +205,16 @@ def agree_privacy(privacy_policy_status):
 
 
 if __name__ == '__main__':
+    # 下面这句必须在if下面添加
+    multiprocessing.freeze_support()
+
+    # 这里要移除上一次生成的，否则报错了会用上一次的截屏结果进行显示
+    last_screen_shot = os.path.join(os.getcwd(), "screen.png")
+    if not os.path.isfile(last_screen_shot):
+        last_screen_shot = resource_path("screen.png")
+    if os.path.isfile(last_screen_shot):
+        os.remove(last_screen_shot)
+
     show_banner()
 
     parser = argparse.ArgumentParser(description="App privacy compliance testing.")
@@ -208,6 +234,8 @@ if __name__ == '__main__':
                        help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
+    parser.add_argument("--external-script", "-es", required=False,
+                        help="load external frida script js, default: ./script.js")
 
     args = parser.parse_args()
     # 全局变量
@@ -221,12 +249,14 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
+    device_info = get_device_info()
+
     if args.noprivacypolicy:
         privacy_policy_status = multiprocessing.Value('u', '后')
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        p = Process(target=agree_privacy, args=(privacy_policy_status,))
+        p = Process(target=agree_privacy, args=(privacy_policy_status, device_info["device"].id))
         p.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(process, use_module, args.time, args.noshow, args.file, args.isattach)
+    frida_hook(device_info, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

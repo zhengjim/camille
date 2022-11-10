@@ -560,5 +560,6 @@
   {'sdk_name': 'BeeCloud 支付', 'package_name': 'cn.beecloud.'},
   {'sdk_name': '高德SDK', 'package_name': 'com.amap.api.'},
   {'sdk_name': '智齿客服SDK', 'package_name': 'com.sobot.chat'},
-  {'sdk_name': '科大讯飞	SDK', 'package_name': 'com.iflytek.'},
+  {'sdk_name': '科大讯飞 SDK', 'package_name': 'com.iflytek.'},
+  {'sdk_name': '同盾科技 SDK', 'package_name': 'com.iflytek.'}
 ]

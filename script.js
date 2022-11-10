@@ -175,10 +175,6 @@ function getSystemData() {
         {'methodName': 'getSerial', 'action': action, 'messages': '获取设备序列号'},
     ]);
 
-    hook('android.os.Build', [
-        {'methodName': 'getSerial', 'action': action, 'messages': '获取设备序列号'},
-    ]);
-
     hook('android.app.admin.DevicePolicyManager', [
         {'methodName': 'getWifiMacAddress', 'action': action, 'messages': '获取mac地址'},
     ]);

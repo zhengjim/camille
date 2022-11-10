@@ -14,17 +14,23 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 
 测试了Android 8.1(还测试了魔趣Android 10)，其他版本安卓可能会有bug。
 
-2022-01-14：删除hook短信接口。新增：可指定模块hook或不hook哪些模块。默认不传，全扫描。
+更新日志：
 
-2022-06-22：修复程序异常退出、冗余度高、hook接口不全有遗落、新增多个Android版本接口；封装hook方法，新增用户自定义hook方法。
+```
+2022-11-10: 
 
-2022-07-08: 默认不开启绕过TracerPid,添加attach hook，避免有些加固包不能hook问题。
+2022-11-03: 添加同意隐私合规状态(需人工确认)、第三方SDK识别、可hook构造函数，`methodName`传`'$init'`。方便大家交流，创建交流群。 新增文件接口，感谢@LiuXinzhi94提供。 新增敏感接口，感谢群里师傅@WYY提供
+
+2022-10-26：新增支持加载外部脚本文件，填相对路径或绝对路径均可（用于 pyinstaller 打包二进制执行文件后使用）感谢@RebornQ pr
 
 2022-09-07：添加讨论群，新增敏感接口，感谢群里师傅@410提供。
 
-2022-10-26：新增支持加载外部脚本文件，填相对路径或绝对路径均可（用于 pyinstaller 打包二进制执行文件后使用）
+2022-07-08: 默认不开启绕过TracerPid,添加attach hook，避免有些加固包不能hook问题。
 
-2022-11-03: 添加同意隐私合规状态(需人工确认)、第三方SDK识别、可hook构造函数，`methodName`传`'$init'`。方便大家交流，创建交流群。 新增文件接口，感谢@LiuXinzhi94提供。 新增敏感接口，感谢群里师傅@WYY提供
+2022-06-22：修复程序异常退出、冗余度高、hook接口不全有遗落、新增多个Android版本接口；封装hook方法，新增用户自定义hook方法。
+
+2022-01-14：删除hook短信接口。新增：可指定模块hook或不hook哪些模块。默认不传，全扫描。
+```
 
 下载：
 
@@ -258,9 +264,8 @@ hook('com.zhengjim.myapplication.HookTest', [
 
 为方便大家交流，创建交流群有需要的加群。后续过期加V，备注github。就会拉进群。
 
-![img.png](images/q.png)
-
-![img.png](images/v.png)
+<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "200" height = "300" alt="" align=center />
+<img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "200" height = "300" alt="" align=center />
 
 ## Stargazers over time
 

@@ -26,38 +26,48 @@ def restart_adb(wait_time=1.5):
     print()
 
 
-def get_device_info():
+def get_device_info(all_devices, device_id):
     restart_adb()
-    devices = frida.enumerate_devices()
-    # devices = list(filter(lambda d: d.name != "Local System" and d.name != "Local Socket",
-    #                       frida.enumerate_devices()))
-    devices_num = len(devices)
-    print("读取到 {num} 个设备：".format(num=devices_num))
-    devices_data = []
-    # if devices_num != 0:
-    for device in devices:
-        devices_data.append({
-            "id": device.id,
-            "type": device.type,
-            "name": device.name
-        })
-    devices_data_frame = pd.DataFrame(devices_data, columns=["id", "type", "name"])
-    if len(devices_data_frame) != 0:
-        print(devices_data_frame)
-    else:
-        print("无设备连接")
-    print()
-
-    result = {}
     try:
-        try:
-            tps = ThirdPartySdk()
-            device = frida.get_usb_device()
-            result["thirdPartySdk"] = tps
-        except:
-            device = frida.get_remote_device()
+        result = {}
+        if device_id is None:
+            if all_devices:
+                devices = frida.enumerate_devices()
+            else:
+                devices = list(filter(lambda d: not d.name.lower().startswith("local"), frida.enumerate_devices()))
+            devices_num = len(devices)
+            print("读取到 {num} 个设备：".format(num=devices_num))
+            devices_data = []
+            # if devices_num != 0:
+            for device in devices:
+                devices_data.append({
+                    "Id": device.id,
+                    "Type": device.type,
+                    "Name": device.name
+                })
+            devices_data_frame = pd.DataFrame(devices_data, columns=["Id", "Type", "Name"])
+            if len(devices_data_frame) != 0:
+                print(devices_data_frame)
+            else:
+                print("无设备连接")
+            print()
+            if len(devices_data_frame) > 1:
+                selection = int(input("检测到有多个设备，请选择你要操作的设备编号："))
+                device = devices[selection]
+            else:
+                try:
+                    device = frida.get_usb_device()
+                except:
+                    device = frida.get_remote_device()
+        else:
+            print("检测到连接指定设备 id: " + device_id, end="")
+            device = frida.get_device(device_id, 1)
+            print(", 连接成功！")
+            print()
+
         print("[*] 当前设备 id: " + device.id)
         result["device"] = device
+        result["thirdPartySdk"] = ThirdPartySdk()
         return result
     except Exception as e:
         print_msg("hook error")

@@ -229,11 +229,16 @@ if __name__ == '__main__':
                         help="close the privacy policy. after closing, default status is agree privacy policy")
 
     group = parser.add_mutually_exclusive_group()
-
     group.add_argument("--use", "-u", required=False,
                        help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
+
+    parser.add_argument("--serial", "-s", required=False,
+                        help="use device with given serial(device id), you can get it by exec 'adb devices'")
+    parser.add_argument("--all-devices", "-ad", required=False, action="store_const", default=False, const=True,
+                        help="Get all devices including local elements, default devices are filtered by the local "
+                             "elements, like 'Local System' and 'Local Socket'.")
     parser.add_argument("--external-script", "-es", required=False,
                         help="load external frida script js, default: ./script.js")
 
@@ -249,7 +254,7 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    device_info = get_device_info()
+    device_info = get_device_info(args.all_devices, args.serial)
 
     if args.noprivacypolicy:
         privacy_policy_status = multiprocessing.Value('u', '后')

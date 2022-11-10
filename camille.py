@@ -141,7 +141,12 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
         exit()
 
     time.sleep(1)
-    session = device.attach(pid)
+    try:
+        session = device.attach(pid)
+    except frida.ProcessNotFoundError as e:
+        print_msg("找不到该进程，请排查")
+        print_msg(e)
+        exit()
     time.sleep(1)
 
     if external_script:
@@ -260,7 +265,8 @@ if __name__ == '__main__':
 
     device_info = get_device_info()
 
-    if args.noprivacypolicy:
+    # attach模式不调用同意隐私协议
+    if args.noprivacypolicy or args.isattach:
         privacy_policy_status = multiprocessing.Value('u', '后')
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')

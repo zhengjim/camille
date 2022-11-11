@@ -136,12 +136,6 @@ python camille.py com.zhengjim.myapplication -s emulator-5556
 
 - -s：指定连接设备，可通过 `adb devices` 获取设备 id
 
-```
-python camille.py com.zhengjim.myapplication -ad
-```
-
-- -ad：获取所有设备，包括 "local" 开头的本机设备，默认的设备列表会过滤掉不常用的本机设备（如："Local System" 和 "Local Socket"），若有需要可通过此参数自行开启
-
 ## 自定义hook接口
 
 在`script.js`文件里的`customHook`方法里可自行添加需要hook的接口。

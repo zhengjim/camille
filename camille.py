@@ -4,6 +4,7 @@ from utlis import print_msg, write_xlsx, resource_path
 from utlis.device import get_device_info
 from multiprocessing import Process
 import multiprocessing
+import traceback
 import argparse
 import random
 import signal
@@ -120,102 +121,108 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
                 isHook = True
                 script.post({"use_module": use_module})
             if data['type'] == "noFoundModule":
-                print_msg('Not Found Module: ' + data['data'] + " . Please exit the check")
-                session.detach()
+                print_msg('输入 {} 模块错误，请检查'.format(data['data']))
+            if data['type'] == "loadModule":
+                if data['data']:
+                    print_msg('已加载模块{}'.format(','.join(data['data'])))
+                else:
+                    print_msg('无模块加载，请检查')
 
     tps = device_info["thirdPartySdk"]
     device = device_info["device"]
     try:
         pid = app_name if isattach else device.spawn([app_name])
+        time.sleep(1)
+        session = device.attach(pid)
+        time.sleep(1)
+        if external_script:
+            if os.path.isabs(external_script):
+                external_script = os.path.abspath(external_script)
+            else:
+                external_script = os.path.join(os.getcwd(), external_script)
+        else:
+            external_script = os.path.join(os.getcwd(), 'script.js')
+        if os.path.isfile(external_script):
+            script_path = external_script
+        else:
+            script_path = resource_path('./script.js')
+            not_exists_log = 'the external script file \'%s\' doesn\'t exists' % external_script
+            if os.path.isfile(os.path.abspath(script_path)):
+                print('Warning: %s，loading built-in script...' % not_exists_log)
+            else:
+                print('Error: %s!' % not_exists_log)
+                exit()
+        with open(script_path, encoding="utf-8") as f:
+            script_read = f.read()
+        if wait_time:
+            script_read += "setTimeout(main, {0}000);\n".format(str(wait_time))
+        else:
+            script_read += "setImmediate(main);\n"
+        script = session.create_script(script_read)
+        script.on("message", my_message_handler)
+        script.load()
+        time.sleep(1)
+        if not isattach:
+            device.resume(pid)
+        wait_time += 1
+        time.sleep(wait_time)
+        if isHook:
+            def stop(signum, frame):
+                print_msg('You have stoped hook.')
+                session.detach()
+                if execl_file:
+                    global execl_data
+                    write_xlsx(execl_data, execl_file)
+                exit()
+
+            signal.signal(signal.SIGINT, stop)
+            signal.signal(signal.SIGTERM, stop)
+            sys.stdin.read()
+        else:
+            print_msg("hook fail, try delaying hook, adjusting delay time")
     except frida.NotSupportedError as e:
-        print_msg('frida-server没有运行/下载版本错/包名错误，请排查')
-        print_msg(e)
-        exit()
+        if 'unable to find application with identifier' in str(e):
+            print_msg('找不到 {} 应用，请排查包名是否正确'.format(app_name))
+        else:
+            print_msg('frida-server没有运行/frida-server与frida版本不一致，请排查')
+            print_msg(e)
     except frida.ServerNotRunningError as e:
         print_msg('frida-server没有运行/没有连接设备，请排查')
         print_msg(e)
-        exit()
-    except Exception as e:
-        print_msg("hook error")
-        print_msg(e)
-        exit()
-
-    time.sleep(1)
-    try:
-        session = device.attach(pid)
     except frida.ProcessNotFoundError as e:
-        print_msg("找不到该进程，请排查")
+        print_msg("找不到该进程，{}".format(str(e)))
+    except frida.InvalidArgumentError as e:
+        print_msg("script.js脚本错误，请排查")
         print_msg(e)
-        exit()
-    time.sleep(1)
-
-    if external_script:
-        if os.path.isabs(external_script):
-            external_script = os.path.abspath(external_script)
-        else:
-            external_script = os.path.join(os.getcwd(), external_script)
-    else:
-        external_script = os.path.join(os.getcwd(), 'script.js')
-    if os.path.isfile(external_script):
-        script_path = external_script
-    else:
-        script_path = resource_path('./script.js')
-        not_exists_log = 'the external script file \'%s\' doesn\'t exists' % external_script
-        if os.path.isfile(os.path.abspath(script_path)):
-            print('Warning: %s，loading built-in script...' % not_exists_log)
-        else:
-            print('Error: %s!' % not_exists_log)
-            exit(1)
-    with open(script_path, encoding="utf-8") as f:
-        script_read = f.read()
-
-    if wait_time:
-        script_read += "setTimeout(main, {0}000);\n".format(str(wait_time))
-    else:
-        script_read += "setImmediate(main);\n"
-
-    script = session.create_script(script_read)
-    script.on("message", my_message_handler)
-    script.load()
-    time.sleep(1)
-    try:
-        if not isattach:
-            device.resume(pid)
+    except frida.InvalidOperationError as e:
+        print_msg('hook被中断，是否运行其他hook框架(包括其他frida)，请排查')
+    except frida.TransportError as e:
+        print_msg('hook关闭或超时，是否运行其他hook框架(包括其他frida)/设备是否关闭selinux，请排查')
+        print_msg(e)
+    except KeyboardInterrupt:
+        print_msg('You have stoped hook.')
     except Exception as e:
         print_msg("hook error")
-        print_msg(e)
+        print(traceback.format_exc())
+    finally:
         exit()
-
-    wait_time += 1
-    time.sleep(wait_time)
-    if isHook:
-        def stop(signum, frame):
-            print_msg('You have stoped hook.')
-            session.detach()
-            if execl_file:
-                global execl_data
-                write_xlsx(execl_data, execl_file)
-            exit()
-
-        signal.signal(signal.SIGINT, stop)
-        signal.signal(signal.SIGTERM, stop)
-        sys.stdin.read()
-    else:
-        print_msg("hook fail, try delaying hook, adjusting delay time")
 
 
 def agree_privacy(privacy_policy_status, device_id):
-    # 等待应用启动
-    time.sleep(5)
-    sc = SimulateClick(device_id, 'screen.png')
-    sc.run()
-    result = sc.get_result()
-    while result == 1:
+    try:
+        # 等待应用启动
+        time.sleep(5)
         sc = SimulateClick(device_id, 'screen.png')
         sc.run()
         result = sc.get_result()
-    if result == 2:
-        privacy_policy_status.value = '后'
+        while result == 1:
+            sc = SimulateClick(device_id, 'screen.png')
+            sc.run()
+            result = sc.get_result()
+        if result == 2:
+            privacy_policy_status.value = '后'
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
@@ -254,7 +261,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # 全局变量
     isHook = False
-
     execl_data = []
 
     use_module = {"type": "all", "data": []}

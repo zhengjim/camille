@@ -1,15 +1,16 @@
-from sys import exit
-from utlis.simulate_click import SimulateClick
-from utlis import print_msg, write_xlsx, resource_path
-from utlis.device import get_device_info
-from multiprocessing import Process
-import multiprocessing
 import argparse
+import multiprocessing
+import os
 import random
 import signal
-import time
 import sys
-import os
+import time
+from multiprocessing import Process
+from sys import exit
+
+from utlis import print_msg, write_xlsx, resource_path
+from utlis.device import get_frida_device
+from utlis.simulate_click import SimulateClick
 
 try:
     import click
@@ -124,6 +125,7 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
 
     tps = device_info["thirdPartySdk"]
     device = device_info["device"]
+    print("[*] 当前设备 id: " + device.id)
     try:
         pid = app_name if isattach else device.spawn([app_name])
     except Exception as e:
@@ -236,9 +238,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--serial", "-s", required=False,
                         help="use device with given serial(device id), you can get it by exec 'adb devices'")
-    parser.add_argument("--all-devices", "-ad", required=False, action="store_const", default=False, const=True,
-                        help="Get all devices including local elements, default devices are filtered by the local "
-                             "elements, like 'Local System' and 'Local Socket'.")
     parser.add_argument("--external-script", "-es", required=False,
                         help="load external frida script js, default: ./script.js")
 
@@ -254,14 +253,14 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    device_info = get_device_info(args.all_devices, args.serial)
+    frida_device = get_frida_device(args.serial)
 
     if args.noprivacypolicy:
         privacy_policy_status = multiprocessing.Value('u', '后')
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        p = Process(target=agree_privacy, args=(privacy_policy_status, device_info["device"].id))
+        p = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
         p.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(device_info, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(frida_device, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

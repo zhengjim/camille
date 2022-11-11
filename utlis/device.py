@@ -28,8 +28,9 @@ def check_environment(device_id):
     is_device_frida_available = True \
         if device_frida_status != "" and "root" in device_frida_status and "frida" in device_frida_status \
         else False
-    device_frida_status = "已启用" if is_device_frida_available else "[ 未启用 | 未安装 | 安装版本错误 ]"
-    print("设备 Frida 状态: " + device_frida_status)
+    device_frida_status = "正常" if is_device_frida_available \
+        else "检测失败，请检查设备是否已正常安装并运行，注意版本必须与 bindings 一致（程序正常运行请忽略该警告~）"
+    print("Frida Server 状态: " + device_frida_status)
     print()
 
 

@@ -62,8 +62,8 @@ def show_banner():
         pass
 
 
-def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False,
-               external_script=None):
+def frida_hook(device_info, app_name, use_module, agree_privacy_process: Process=None,
+               wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
@@ -131,6 +131,8 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
     except Exception as e:
         print_msg("hook error")
         print_msg(e)
+        if agree_privacy_process is not None and agree_privacy_process.is_alive():
+            agree_privacy_process.terminate()
         exit()
 
     time.sleep(1)
@@ -172,6 +174,8 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
     except Exception as e:
         print_msg("hook error")
         print_msg(e)
+        if agree_privacy_process is not None and agree_privacy_process.is_alive():
+            agree_privacy_process.terminate()
         exit()
 
     wait_time += 1
@@ -257,10 +261,12 @@ if __name__ == '__main__':
 
     if args.noprivacypolicy:
         privacy_policy_status = multiprocessing.Value('u', '后')
+        agree_privacy_process = None
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        p = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
-        p.start()
+        agree_privacy_process = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
+        agree_privacy_process.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(frida_device, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(frida_device, process, use_module, agree_privacy_process,
+               args.time, args.noshow, args.file, args.isattach, args.external_script)

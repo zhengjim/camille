@@ -103,6 +103,7 @@ def select_device(device_id):
 
 
 def get_frida_device(device_id=None):
+    """ 设备初始化 """
     try:
         result = {}
         device_selection = prepare(device_id)
@@ -112,6 +113,7 @@ def get_frida_device(device_id=None):
                 try:
                     device = frida.get_usb_device(1)
                 except:
+                    print_msg('\n获取USB设备失败，使用remote模式...')
                     device = frida.get_remote_device()
                 if device is not None:
                     print("连接成功！\n")
@@ -126,6 +128,6 @@ def get_frida_device(device_id=None):
             print("连接失败！\n")
             raise e
     except Exception as e:
-        print_msg("hook error")
+        print_msg("环境初始化失败，请检查是否正确安装Frida")
         print_msg(e)
         exit()

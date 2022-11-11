@@ -4,6 +4,7 @@ import os
 import random
 import signal
 import sys
+import frida
 import time
 from multiprocessing import Process
 from sys import exit
@@ -128,6 +129,14 @@ def frida_hook(device_info, app_name, use_module, agree_privacy_process: Process
     print("[*] 当前设备 id: " + device.id)
     try:
         pid = app_name if isattach else device.spawn([app_name])
+    except frida.NotSupportedError as e:
+        print_msg('frida-server没有运行/下载版本错/包名错误，请排查')
+        print_msg(e)
+        exit()
+    except frida.ServerNotRunningError as e:
+        print_msg('frida-server没有运行/没有连接设备，请排查')
+        print_msg(e)
+        exit()
     except Exception as e:
         print_msg("hook error")
         print_msg(e)
@@ -136,7 +145,12 @@ def frida_hook(device_info, app_name, use_module, agree_privacy_process: Process
         exit()
 
     time.sleep(1)
-    session = device.attach(pid)
+    try:
+        session = device.attach(pid)
+    except frida.ProcessNotFoundError as e:
+        print_msg("找不到该进程，请排查")
+        print_msg(e)
+        exit()
     time.sleep(1)
 
     if external_script:
@@ -259,14 +273,15 @@ if __name__ == '__main__':
 
     frida_device = get_frida_device(args.serial)
 
-    if args.noprivacypolicy:
+    # attach模式不调用同意隐私协议
+    if args.noprivacypolicy or args.isattach:
         privacy_policy_status = multiprocessing.Value('u', '后')
         agree_privacy_process = None
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
         agree_privacy_process = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
+        agree_privacy_process.daemon = True
         agree_privacy_process.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(frida_device, process, use_module, agree_privacy_process,
-               args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(frida_device, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)

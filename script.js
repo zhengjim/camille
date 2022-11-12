@@ -30,10 +30,15 @@ function getStackTrace() {
     return result;
 }
 
+function get_format_time() {
+    var myDate = new Date();
+
+    return myDate.getFullYear() + '-' + myDate.getMonth() + '-' + myDate.getDate() + ' ' + myDate.getHours() + ':' + myDate.getMinutes() + ':' + myDate.getSeconds();
+}
+
 //告警发送
 function alertSend(action, messages, arg) {
-    var myDate = new Date();
-    var _time = myDate.getFullYear() + '-' + myDate.getMonth() + '-' + myDate.getDate() + ' ' + myDate.getHours() + ':' + myDate.getMinutes() + ':' + myDate.getSeconds();
+    var _time = get_format_time();
     send({
         'type': 'notice',
         'time': _time,
@@ -520,9 +525,9 @@ function useModule(moduleList) {
 function main() {
     try {
         Java.perform(function () {
-            console.log('[*] 隐私合规检测敏感接口开始监控...');
+            console.log('[*] ' + get_format_time() + ' 隐私合规检测敏感接口开始监控...');
             send({"type": "isHook"})
-            console.log('[*] 检测到安卓版本：' + Java.androidVersion);
+            console.log('[*] ' + get_format_time() + ' 检测到安卓版本：' + Java.androidVersion);
             var moduleList;
             recv(function (received_json_object) {
                 moduleList = received_json_object.use_module;

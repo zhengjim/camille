@@ -15,7 +15,7 @@ def get_device_info():
         except:
             print_msg('获取USB设备失败，使用remote模式')
             device = frida.get_remote_device()
-        print("[*] 当前设备 id: " + device.id)
+        print_msg("当前设备 id: " + device.id)
         result["device"] = device
         return result
     except Exception as e:

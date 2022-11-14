@@ -30,10 +30,15 @@ function getStackTrace() {
     return result;
 }
 
+function get_format_time() {
+    var myDate = new Date();
+
+    return myDate.getFullYear() + '-' + myDate.getMonth() + '-' + myDate.getDate() + ' ' + myDate.getHours() + ':' + myDate.getMinutes() + ':' + myDate.getSeconds();
+}
+
 //告警发送
 function alertSend(action, messages, arg) {
-    var myDate = new Date();
-    var _time = myDate.getFullYear() + '-' + myDate.getMonth() + '-' + myDate.getDate() + ' ' + myDate.getHours() + ':' + myDate.getMinutes() + ':' + myDate.getSeconds();
+    var _time = get_format_time();
     send({
         'type': 'notice',
         'time': _time,
@@ -103,8 +108,8 @@ function hook(targetClass, methodData) {
     _Class.$dispose;
     // 排查掉不存在的方法，用于各个android版本不存在方法报错问题。
     methodData.forEach(function (methodData) {
-        for (var method of methods) {
-            if (method.toString().indexOf(methodData['methodName']) != -1 || methodData['methodName'] == '$init') {
+        for (var i in methods) {
+            if (methods[i].toString().indexOf('.' + methodData['methodName'] + '(') != -1 || methodData['methodName'] == '$init') {
                 hookMethod(targetClass, methodData['methodName'], methodData['action'], methodData['messages']);
                 break;
             }
@@ -481,18 +486,20 @@ function useModule(moduleList) {
         'custom': [customHook]
     };
     var _m = Object.keys(_module);
+    var tmp_m = []
     if (moduleList['type'] !== 'all') {
         var input_module_data = moduleList['data'].split(',');
         for (i = 0; i < input_module_data.length; i++) {
             if (_m.indexOf(input_module_data[i]) === -1) {
                 send({'type': 'noFoundModule', 'data': input_module_data[i]})
-                return
+            } else {
+                tmp_m.push(input_module_data[i])
             }
         }
     }
     switch (moduleList['type']) {
         case 'use':
-            _m = input_module_data;
+            _m = tmp_m;
             break;
         case 'nouse':
             for (var i = 0; i < input_module_data.length; i++) {
@@ -505,9 +512,12 @@ function useModule(moduleList) {
             }
             break;
     }
-    for (i = 0; i < _m.length; i++) {
-        for (j = 0; j < _module[_m[i]].length; j++) {
-            _module[_m[i]][j]();
+    send({'type': 'loadModule', 'data': _m})
+    if (_m.length !== 0) {
+        for (i = 0; i < _m.length; i++) {
+            for (j = 0; j < _module[_m[i]].length; j++) {
+                _module[_m[i]][j]();
+            }
         }
     }
 }
@@ -515,9 +525,9 @@ function useModule(moduleList) {
 function main() {
     try {
         Java.perform(function () {
-            console.log('[*] 隐私合规检测敏感接口开始监控...');
+            console.log('[*] ' + get_format_time() + ' 隐私合规检测敏感接口开始监控...');
             send({"type": "isHook"})
-            console.log('[*] 检测到安卓版本：' + Java.androidVersion);
+            console.log('[*] ' + get_format_time() + ' 检测到安卓版本：' + Java.androidVersion);
             var moduleList;
             recv(function (received_json_object) {
                 moduleList = received_json_object.use_module;

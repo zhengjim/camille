@@ -35,12 +35,16 @@ def check_environment(device_id):
 
 
 def restart_adb(wait_time=1.5):
-    # 避免有时候 frida/adb 迷惑行为拿不到所有连接的设备
+    # 避免有时候 frida/adb 迷惑行为拿不到所有连接的设备，比如本机 adb 和模拟器 adb 版本不一致时极容易导致这个情况
     restart_adb_shells = ["adb kill-server", "adb start-server"]
     try:
         for shell in restart_adb_shells:
             subprocess.getoutput(shell)
         # 这里要延时至少 1.5 秒（adb devices 要 3 秒），不然可能 adb 服务还没完全开启，导致设备列表为空
+        time.sleep(wait_time)
+        # 不知道为啥这里要执行一次 adb devices 后面才能拿到设备
+        subprocess.getoutput("adb devices")
+        # 这里还要再延时一次，不然设备也会找不全，原因暂时不知
         time.sleep(wait_time)
     except Exception as e:
         print_msg(e)
@@ -48,18 +52,27 @@ def restart_adb(wait_time=1.5):
 
 def enumerate_adb_devices():
     adb_devices = subprocess.getoutput("adb devices").splitlines()
-    del adb_devices[0]
+    # 修复因索引不正确导致读取设备列表错误的问题
+    adb_devices_index = adb_devices.index('List of devices attached') + 1
+    for i in range(adb_devices_index):
+        del adb_devices[0]
     devices = []
     for adb_device in adb_devices:
         values = adb_device.split("\t")
-        device = Device(_id=values[0], _type=values[1])
+        _id = values[0]
+        _type = values[1]
+        brand = subprocess.getoutput("adb -s {} shell getprop ro.product.brand".format(_id))
+        model = subprocess.getoutput("adb -s {} shell getprop ro.product.model".format(_id))
+        # android_version = subprocess.getoutput("adb -s {} shell getprop ro.build.version.release".format(_id))
+        device = Device(_id=_id, _type=_type, _name="{} {}".format(brand, model))
         devices.append(device)
     return devices
 
 
-def prepare(device_id):
+def prepare(device_id, is_restart_adb=False):
     print("[*] 正在检测 ADB...", end="")
-    restart_adb()
+    if is_restart_adb:
+        restart_adb()
     print("成功！")
     device_selection = select_device(device_id)
     check_environment(device_selection.id)
@@ -67,8 +80,6 @@ def prepare(device_id):
 
 
 def select_device(device_id):
-    # 不知道为啥这里要执行一次 adb devices 后面才能拿到设备
-    subprocess.getoutput("adb devices")
     if device_id is None:
         devices = list(filter(lambda d: not d.name.lower().startswith("local"), frida.enumerate_devices()))
         devices_num = len(devices)
@@ -102,11 +113,11 @@ def select_device(device_id):
     return device
 
 
-def get_frida_device(device_id=None):
+def get_frida_device(device_id=None, is_restart_adb=False):
     """ 设备初始化 """
     try:
         result = {}
-        device_selection = prepare(device_id)
+        device_selection = prepare(device_id, is_restart_adb)
         try:
             print("正在连接设备...", end="")
             if device_selection is None:

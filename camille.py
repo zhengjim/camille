@@ -254,6 +254,8 @@ if __name__ == '__main__':
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
 
+    parser.add_argument("--restart-adb", "-ra", required=False, action="store_const", default=False, const=True,
+                        help="restart adb before anything")
     parser.add_argument("--serial", "-s", required=False,
                         help="use device with given serial(device id), you can get it by exec 'adb devices'")
     parser.add_argument("--external-script", "-es", required=False,
@@ -271,7 +273,7 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    frida_device = get_frida_device(args.serial)
+    frida_device = get_frida_device(args.serial, args.restart_adb)
 
     # attach模式不调用同意隐私协议
     if args.noprivacypolicy or args.isattach:
@@ -284,4 +286,5 @@ if __name__ == '__main__':
         agree_privacy_process.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(frida_device, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(frida_device, process, use_module,
+               args.time, args.noshow, args.file, args.isattach, args.external_script)

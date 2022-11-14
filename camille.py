@@ -64,7 +64,7 @@ def show_banner():
         pass
 
 
-def frida_hook(device_info, app_name, use_module, agree_privacy_process: Process=None,
+def frida_hook(device_info, app_name, use_module,
                wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名

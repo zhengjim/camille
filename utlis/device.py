@@ -70,10 +70,10 @@ def enumerate_adb_devices():
 
 
 def prepare(device_id, is_restart_adb=False):
-    print("[*] 正在检测 ADB...", end="")
     if is_restart_adb:
+        print("[*] 正在重启 ADB...", end="")
         restart_adb()
-    print("成功！")
+        print("成功！")
     device_selection = select_device(device_id)
     check_environment(device_selection.id)
     return device_selection

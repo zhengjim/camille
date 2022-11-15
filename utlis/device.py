@@ -31,26 +31,6 @@ def check_environment(device_id):
     print_msg("设备架构: " + abi)
 
 
-def enumerate_adb_devices():
-    """ 枚举adb设备 """
-
-    adb_devices = subprocess.getoutput("adb devices").splitlines()
-    # 修复因索引不正确导致读取设备列表错误的问题
-    adb_devices_index = adb_devices.index('List of devices attached') + 1
-    for i in range(adb_devices_index):
-        del adb_devices[0]
-    devices = []
-    for adb_device in adb_devices:
-        values = adb_device.split("\t")
-        _id = values[0]
-        _type = values[1]
-        brand = subprocess.getoutput("adb -s {} shell getprop ro.product.brand".format(_id))
-        model = subprocess.getoutput("adb -s {} shell getprop ro.product.model".format(_id))
-        device = Device(_id=_id, _type=_type, _name="{} {}".format(brand, model))
-        devices.append(device)
-    return devices
-
-
 def select_device(device_id):
     """选择设备
 
@@ -63,15 +43,18 @@ def select_device(device_id):
         devices_num = len(devices)
         print_msg("读取到 {num} 个设备：".format(num=devices_num))
         devices_data = []
+        num = 0
         for device in devices:
             devices_data.append({
+                'k': num,
                 "Id": device.id,
                 "Type": device.type,
                 "Name": device.name
             })
+            num += 1
         if devices_data:
-            table_titles = ["ID", "Type", "Name"]
-            format_string = "{:<20}{:<10}{:<15}"
+            table_titles = ['NUM', 'ID', 'TYPE', 'NAME']
+            format_string = "{:<15}{:<20}{:<15}{:<15}"
             print(format_string.format(*table_titles))
             for entry in devices_data:
                 print(format_string.format(*entry.values()))

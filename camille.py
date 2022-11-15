@@ -1,17 +1,18 @@
-from sys import exit
-from utlis.simulate_click import SimulateClick
-from utlis import print_msg, write_xlsx, resource_path
-from utlis.device import get_device_info
-from multiprocessing import Process
+import argparse
 import multiprocessing
 import traceback
-import argparse
+import os
 import random
 import signal
+import sys
 import frida
 import time
-import sys
-import os
+from multiprocessing import Process
+from sys import exit
+
+from utlis import print_msg, write_xlsx, resource_path
+from utlis.device import get_frida_device
+from utlis.simulate_click import SimulateClick
 
 try:
     import click
@@ -63,8 +64,8 @@ def show_banner():
         pass
 
 
-def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, execl_file=None, isattach=False,
-               external_script=None):
+def frida_hook(device_info, app_name, use_module,
+               wait_time=0, is_show=True, execl_file=None, isattach=False, external_script=None):
     """
     :param app_name: 包名
     :param use_module 使用哪些模块
@@ -130,6 +131,7 @@ def frida_hook(device_info, app_name, use_module, wait_time=0, is_show=True, exe
 
     tps = device_info["thirdPartySdk"]
     device = device_info["device"]
+    print_msg("当前设备 id: " + device.id)
     try:
         pid = app_name if isattach else device.spawn([app_name])
         time.sleep(1)
@@ -250,11 +252,15 @@ if __name__ == '__main__':
                         help="close the privacy policy. after closing, default status is agree privacy policy")
 
     group = parser.add_mutually_exclusive_group()
-
     group.add_argument("--use", "-u", required=False,
                        help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
+
+    parser.add_argument("--restart-adb", "-ra", required=False, action="store_const", default=False, const=True,
+                        help="restart adb before anything")
+    parser.add_argument("--serial", "-s", required=False,
+                        help="use device with given serial(device id), you can get it by exec 'adb devices'")
     parser.add_argument("--external-script", "-es", required=False,
                         help="load external frida script js, default: ./script.js")
 
@@ -269,16 +275,18 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    device_info = get_device_info()
+    frida_device = get_frida_device(args.serial, args.restart_adb)
 
     # attach模式不调用同意隐私协议
     if args.noprivacypolicy or args.isattach:
         privacy_policy_status = multiprocessing.Value('u', '后')
+        agree_privacy_process = None
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        p = Process(target=agree_privacy, args=(privacy_policy_status, device_info["device"].id))
-        p.daemon = True
-        p.start()
+        agree_privacy_process = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
+        agree_privacy_process.daemon = True
+        agree_privacy_process.start()
 
     process = int(args.package) if args.package.isdigit() else args.package
-    frida_hook(device_info, process, use_module, args.time, args.noshow, args.file, args.isattach, args.external_script)
+    frida_hook(frida_device, process, use_module,
+               args.time, args.noshow, args.file, args.isattach, args.external_script)

@@ -66,6 +66,18 @@ python camille.py com.zhengjim.myapplication -t 3
 
 - -nu：跳过扫描指定模块。与命令`-u`互斥。多个模块用','隔开。例如：phone,permission 模块列表同上
 
+```
+python camille.py com.zhengjim.myapplication -s emulator-5556
+```
+
+- -s：指定连接设备，可通过 `adb devices` 获取设备 id
+
+```
+python camille.py com.zhengjim.myapplication -ra
+```
+
+- -ra：获取设备前会重启一次 adb，无法找到设备时可以尝试用这个参数重置 adb
+
 # 自定义hook接口
 
 在`script.js`文件里的`customHook`方法里可自行添加需要hook的接口。

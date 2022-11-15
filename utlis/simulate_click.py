@@ -1,5 +1,5 @@
 from utlis import print_msg, resource_path
-from utlis.device import get_device_info
+from utlis.device import get_frida_device
 import subprocess
 import cv2
 import os
@@ -83,5 +83,5 @@ class SimulateClick:
 
 
 if __name__ == '__main__':
-    sc = SimulateClick(get_device_info()["device"].id, 'screen.png')
+    sc = SimulateClick(get_frida_device()["device"].id, 'screen.png')
     sc.run()

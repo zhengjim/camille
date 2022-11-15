@@ -1,18 +1,17 @@
-import argparse
-import multiprocessing
-import traceback
-import os
-import random
-import signal
-import sys
-import frida
-import time
+from utlis import print_msg, write_xlsx, resource_path
+from utlis.simulate_click import SimulateClick
+from utlis.device import get_frida_device
 from multiprocessing import Process
 from sys import exit
-
-from utlis import print_msg, write_xlsx, resource_path
-from utlis.device import get_frida_device
-from utlis.simulate_click import SimulateClick
+import multiprocessing
+import traceback
+import argparse
+import random
+import signal
+import frida
+import time
+import sys
+import os
 
 try:
     import click
@@ -131,7 +130,6 @@ def frida_hook(device_info, app_name, use_module,
 
     tps = device_info["thirdPartySdk"]
     device = device_info["device"]
-    print_msg("当前设备 id: " + device.id)
     try:
         pid = app_name if isattach else device.spawn([app_name])
         time.sleep(1)
@@ -257,8 +255,6 @@ if __name__ == '__main__':
     group.add_argument("--nouse", "-nu", required=False,
                        help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
 
-    parser.add_argument("--restart-adb", "-ra", required=False, action="store_const", default=False, const=True,
-                        help="restart adb before anything")
     parser.add_argument("--serial", "-s", required=False,
                         help="use device with given serial(device id), you can get it by exec 'adb devices'")
     parser.add_argument("--external-script", "-es", required=False,
@@ -275,8 +271,7 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    frida_device = get_frida_device(args.serial, args.restart_adb)
-
+    frida_device = get_frida_device(args.serial)
     # attach模式不调用同意隐私协议
     if args.noprivacypolicy or args.isattach:
         privacy_policy_status = multiprocessing.Value('u', '后')

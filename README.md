@@ -6,6 +6,10 @@ Android App隐私合规检测辅助工具
 
 现如今APP隐私合规十分重要，各监管部门不断开展APP专项治理工作及核查通报，不合规的APP通知整改或直接下架。camille可以hook住Android敏感接口。根据隐私合规的场景，辅助检查是否符合隐私合规标准。
 
+## 隐私合规资料及政策
+
+[隐私资料政策wiki](https://github.com/zhengjim/camille/wiki)
+
 ## 安装
 
 环境：
@@ -17,6 +21,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 更新日志：
 
 ```
+2022-11-16：感谢@ysrfeng 添加wiki，添加隐私合规相关资料和政策文档。
+
 2022-11-15：合并@RebornQ PR，新增多设备可指定设备功能
 
 2022-11-11：修复Android7报错、Frida12报错、优化异常处理便于排查

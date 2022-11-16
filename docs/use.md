@@ -76,8 +76,6 @@ python camille.py com.zhengjim.myapplication -s emulator-5556
 python camille.py com.zhengjim.myapplication -ra
 ```
 
-- -ra：获取设备前会重启一次 adb，无法找到设备时可以尝试用这个参数重置 adb
-
 # 自定义hook接口
 
 在`script.js`文件里的`customHook`方法里可自行添加需要hook的接口。

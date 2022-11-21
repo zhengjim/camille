@@ -186,6 +186,9 @@ def frida_hook(device_info, app_name, use_module,
         else:
             print_msg('frida-server没有运行/frida-server与frida版本不一致，请排查')
             print_msg(e)
+    except frida.ProtocolError as e:
+        print_msg('frida-server没有运行/frida-server与frida版本不一致，请排查')
+        print_msg(e)
     except frida.ServerNotRunningError as e:
         print_msg('frida-server没有运行/没有连接设备，请排查')
         print_msg(e)
@@ -249,14 +252,16 @@ if __name__ == '__main__':
     parser.add_argument("--noprivacypolicy", "-npp", required=False, action="store_const", default=False, const=True,
                         help="close the privacy policy. after closing, default status is agree privacy policy")
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--use", "-u", required=False,
-                       help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
-    group.add_argument("--nouse", "-nu", required=False,
-                       help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
+    module_group = parser.add_mutually_exclusive_group()
+    module_group.add_argument("--use", "-u", required=False,
+                              help="Detect the specified module,Multiple modules are separated by ',' ex:phone,permission")
+    module_group.add_argument("--nouse", "-nu", required=False,
+                              help="Skip specified module，Multiple modules are separated by ',' ex:phone,permission")
 
     parser.add_argument("--serial", "-s", required=False,
                         help="use device with given serial(device id), you can get it by exec 'adb devices'")
+    parser.add_argument("--host", "-H", required=False,
+                        help="connect to remote frida-server on HOST,ex:127.0.0.1:1234")
     parser.add_argument("--external-script", "-es", required=False,
                         help="load external frida script js, default: ./script.js")
 
@@ -271,14 +276,15 @@ if __name__ == '__main__':
     if args.nouse:
         use_module = {"type": "nouse", "data": args.nouse}
 
-    frida_device = get_frida_device(args.serial)
+    frida_device = get_frida_device(args.serial, args.host)
     # attach模式不调用同意隐私协议
     if args.noprivacypolicy or args.isattach:
         privacy_policy_status = multiprocessing.Value('u', '后')
         agree_privacy_process = None
     else:
         privacy_policy_status = multiprocessing.Value('u', '前')
-        agree_privacy_process = Process(target=agree_privacy, args=(privacy_policy_status, frida_device["device"].id))
+        did = frida_device['did'] if frida_device['did'] else frida_device["device"].id
+        agree_privacy_process = Process(target=agree_privacy, args=(privacy_policy_status, did))
         agree_privacy_process.daemon = True
         agree_privacy_process.start()
 

@@ -20,10 +20,10 @@ class SimulateClick:
         """
 
         device_id_cmd = "-s {}".format(self.device_id) if self.device_id is not None else ""
-        shells = ['adb {} shell rm /sdcard/camille_screen_tmp.png'.format(device_id_cmd),
-                  'adb {} shell screencap -p /sdcard/camille_screen_tmp.png'.format(device_id_cmd),
-                  'adb {} pull /sdcard/camille_screen_tmp.png {}'.format(device_id_cmd, self.path),
-                  'adb {} shell rm /sdcard/camille_screen_tmp.png'.format(device_id_cmd)]
+        shells = ['adb {} shell rm /data/camille_screen_tmp.png'.format(device_id_cmd),
+                  'adb {} shell screencap -p /data/camille_screen_tmp.png'.format(device_id_cmd),
+                  'adb {} pull /data/camille_screen_tmp.png {}'.format(device_id_cmd, self.path),
+                  'adb {} shell rm /data/camille_screen_tmp.png'.format(device_id_cmd)]
         try:
             for shell in shells:
                 subprocess.getoutput(shell)

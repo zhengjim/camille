@@ -4,7 +4,7 @@ Android App隐私合规检测辅助工具
 
 ## 简介
 
-现如今APP隐私合规十分重要，各监管部门不断开展APP专项治理工作及核查通报，不合规的APP通知整改或直接下架。camille可以hook住Android敏感接口。根据隐私合规的场景，辅助检查是否符合隐私合规标准。
+现如今APP隐私合规十分重要，各监管部门不断开展APP专项治理工作及核查通报，不合规的APP通知整改或直接下架。camille可以hook住Android敏感接口，检测是否第三方SDK调用。根据隐私合规的场景，辅助检查是否符合隐私合规标准。
 
 ## 隐私合规资料及政策
 
@@ -21,6 +21,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 更新日志：
 
 ```
+2022-11-21：新增可指定frida-server用于对抗frida检测，参数-H、修复模拟器没有sdcard目录报错问题
+
 2022-11-16：感谢@ysrfeng 添加wiki，添加隐私合规相关资料和政策文档。
 
 2022-11-15：合并@RebornQ PR，新增多设备可指定设备功能
@@ -77,7 +79,7 @@ python camille.py -h
 
 为方便大家交流，创建交流群有需要的加群。后续过期加V，备注github。就会拉进群。
 
-<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "200" height = "300" alt="" align=center /><img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "200" height = "300" alt="" align=center />
+<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "300" height = "450" alt="" align=center /><img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
 
 ## Stargazers over time
 

@@ -8,6 +8,7 @@
 * [指定设备](#指定设备)
 * [自定义hook接口](#自定义hook接口)
 * [是否同意隐私政策](#是否同意隐私政策)
+* [指定Frida-sever](#指定Frida-sever)
 * [PyInstaller 打包二进制可执行文件](#PyInstaller打包二进制可执行文件)
 
 # 使用：

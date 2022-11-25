@@ -31,10 +31,11 @@ def check_environment(device_id):
     print_msg("设备架构: " + abi)
 
 
-def select_device(device_id):
+def select_device(device_id, host):
     """选择设备
 
     :param device_id: 设备id
+    :param host: frida地址及端口
     :return:
     """
 
@@ -63,7 +64,10 @@ def select_device(device_id):
             exit()
         print()
         if devices_num > 1:
-            selection = int(input("检测到有多个设备，请选择你要操作的设备编号："))
+            if host:
+                selection = int(input("检测到有多个设备，请选择{}对应设备编号：".format(host)))
+            else:
+                selection = int(input("检测到有多个设备，请选择你要操作的设备编号："))
             device = devices[selection]
             print()
         elif devices_num == 1:
@@ -74,15 +78,26 @@ def select_device(device_id):
         print_msg("检测到连接指定设备 id: " + device_id)
         device = Device(device_id)
         print()
+    if device:
+        check_environment(device.id)
     return device
 
 
-def get_frida_device(device_id=None):
-    """ 设备初始化 """
-    result = {}
+def get_frida_device(device_id=None, host=None):
+    """设备初始化
+
+    :param device_id: 设备id
+    :param host: frida指定host及端口 ex:127.0.0.1:1234
+    :return:
+    """
+    result = {
+        'did': '',
+        'device': '',
+        'thirdPartySdk': '',
+    }
     try:
         print_msg("设备环境检测中...")
-        device_selection = select_device(device_id)
+        device_selection = select_device(device_id, host)
         if device_selection is None:
             try:
                 device = frida.get_usb_device(1)
@@ -90,9 +105,12 @@ def get_frida_device(device_id=None):
                 print_msg('\n获取USB设备失败，使用remote模式...')
                 device = frida.get_remote_device()
         else:
-            check_environment(device_selection.id)
-            device = frida.get_device(device_selection.id, 1)
-
+            if host:
+                result['did'] = device_selection.id
+                manager = frida.get_device_manager()
+                device = manager.add_remote_device(host)
+            else:
+                device = frida.get_device(device_selection.id, 1)
         result["device"] = device
         result["thirdPartySdk"] = ThirdPartySdk()
         print_msg("Frida bindings 版本: {}".format(frida.__version__))

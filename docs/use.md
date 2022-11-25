@@ -1,11 +1,17 @@
 # 目录
 
-* [简单使用](#简单使用)
+* [使用](#使用)
+* [输出堆栈信息文件](#输出堆栈信息文件)
+* [延迟hook](#延迟hook)
+* [使用attach hook](#使用attach)
+* [选择Hook模块](#选择Hook模块)
+* [指定设备](#指定设备)
 * [自定义hook接口](#自定义hook接口)
 * [是否同意隐私政策](#是否同意隐私政策)
+* [指定Frida-sever](#指定Frida-sever)
 * [PyInstaller 打包二进制可执行文件](#PyInstaller打包二进制可执行文件)
 
-# 简单使用：
+# 使用：
 
 ```
 python camille.py com.zhengjim.myapplication
@@ -15,14 +21,18 @@ python camille.py com.zhengjim.myapplication
 
 `com.zhengjim.myapplication`为测试app的包名，会显示时间、行为和调用堆栈。可以根据场景来判断是否合规，如：获取敏感信息是否是在同意隐私政策之前等。
 
+# 输出堆栈信息文件
+
 ```
 python camille.py com.zhengjim.myapplication -ns -f demo01.xls
 ```
 
 - -ns：不显示日志。默认显示
-- -f： 保存app行为轨迹到到execl里。默认不保存。
+- -f： 保存app行为轨迹(堆栈信息)到execl里。默认不保存。
 
 ![img.png](../images/img2.png)
+
+# 延迟hook
 
 ```
 python camille.py com.zhengjim.myapplication -t 3
@@ -38,6 +48,8 @@ python camille.py com.zhengjim.myapplication -t 3
 
 ![img_1.png](../images/img4.png)
 
+# 使用attach
+
 - -ia：使用attach hook
 
 假如还是hook不上，可以使用`-ia`，指定包名或运行进程ID。 有些包有同名进程，frida会hook失败，需要使用进程ID。
@@ -45,6 +57,8 @@ python camille.py com.zhengjim.myapplication -t 3
 找进程ID，进入安卓运行`ps -A | grep com.zhengjim.myapplication`
 
 ![img_6.png](../images/img6.png)
+
+# 选择Hook模块
 
 - -u： 扫描指定模块。与命令`-nu`互斥。多个模块用','隔开。例如：phone,permission
 
@@ -66,15 +80,13 @@ python camille.py com.zhengjim.myapplication -t 3
 
 - -nu：跳过扫描指定模块。与命令`-u`互斥。多个模块用','隔开。例如：phone,permission 模块列表同上
 
+# 指定设备
+
 ```
 python camille.py com.zhengjim.myapplication -s emulator-5556
 ```
 
 - -s：指定连接设备，可通过 `adb devices` 获取设备 id
-
-```
-python camille.py com.zhengjim.myapplication -ra
-```
 
 # 自定义hook接口
 
@@ -109,6 +121,27 @@ hook('com.zhengjim.myapplication.HookTest', [
 查看报告
 
 ![img.png](../images/img10.png)
+
+# 指定Frida-sever
+
+- -H: 指定Frida-sever
+
+对抗Frida检测，换端口启动，配合[hluda server](https://github.com/CrackerCat/strongR-frida-android) 使用，可过很多检测。hluda server更改了frida的很多特征。
+
+服务端：
+```
+./hlu15 -l 0.0.0.0:30000
+# 转发端口
+adb forward tcp:30000 tcp:30000
+```
+
+使用：
+```
+python camille.py com.zhengjim.myapplication -H 127.0.0.1:30000
+```
+
+![img.png](../images/img11.png)
+
 
 # PyInstaller打包二进制可执行文件
 

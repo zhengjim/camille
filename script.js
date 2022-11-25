@@ -175,6 +175,10 @@ function getSystemData() {
     hook('android.provider.Settings$Secure', [
         {'methodName': 'getString', 'action': action, 'messages': '获取安卓ID'}
     ]);
+    hook('android.provider.Settings$System', [
+        {'methodName': 'getString', 'action': action, 'messages': '获取安卓ID'}
+    ]);
+
 
     hook('android.os.Build', [
         {'methodName': 'getSerial', 'action': action, 'messages': '获取设备序列号'},

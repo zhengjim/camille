@@ -101,6 +101,13 @@ hook('com.zhengjim.myapplication.HookTest', [
 ]);
 ```
 
+如果需要过滤参考，使用args参数，如下，只记录参数为`android_id`：
+```
+hook('android.provider.Settings$Secure', [
+    {'methodName': 'getString', 'args': [ 'android_id' ], 'action': action, 'messages': '获取安卓ID'}
+]);
+```
+
 `-u custom`是只检测自定义接口，如图：
 ![img.png](../images/img5.png)
 

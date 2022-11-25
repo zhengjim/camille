@@ -49,8 +49,15 @@ function alertSend(action, messages, arg) {
     });
 }
 
+// 增强健壮性，避免有的设备无法使用 Array.isArray 方法
+if (!Array.isArray) {
+  Array.isArray = function(arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+  };
+}
+
 // hook方法
-function hookMethod(targetClass, targetMethod, action, messages) {
+function hookMethod(targetClass, targetMethod, targetArgs, action, messages) {
     try {
         var _Class = Java.use(targetClass);
     } catch (e) {
@@ -62,6 +69,11 @@ function hookMethod(targetClass, targetMethod, action, messages) {
         for (var i = 0; i < overloadCount; i++) {
             _Class.$init.overloads[i].implementation = function () {
                 var temp = this.$init.apply(this, arguments);
+                // 是否含有需要过滤的参数
+                var argumentValues = Object.values(arguments);
+                if(Array.isArray(targetArgs) && !targetArgs.every(item => argumentValues.includes(item))) {
+                    return null;
+                }
                 var arg = '';
                 for (var j = 0; j < arguments.length; j++) {
                     arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
@@ -83,6 +95,11 @@ function hookMethod(targetClass, targetMethod, action, messages) {
         for (var i = 0; i < overloadCount; i++) {
             _Class[targetMethod].overloads[i].implementation = function () {
                 var temp = this[targetMethod].apply(this, arguments);
+                // 是否含有需要过滤的参数
+                var argumentValues = Object.values(arguments);
+                if(Array.isArray(targetArgs) && !targetArgs.every(item => argumentValues.includes(item))) {
+                    return null;
+                }
                 var arg = '';
                 for (var j = 0; j < arguments.length; j++) {
                     arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
@@ -110,7 +127,7 @@ function hook(targetClass, methodData) {
     methodData.forEach(function (methodData) {
         for (var i in methods) {
             if (methods[i].toString().indexOf('.' + methodData['methodName'] + '(') != -1 || methodData['methodName'] == '$init') {
-                hookMethod(targetClass, methodData['methodName'], methodData['action'], methodData['messages']);
+                hookMethod(targetClass, methodData['methodName'], methodData['args'], methodData['action'], methodData['messages']);
                 break;
             }
         }
@@ -173,10 +190,10 @@ function getSystemData() {
     var action = '获取系统信息';
 
     hook('android.provider.Settings$Secure', [
-        {'methodName': 'getString', 'action': action, 'messages': '获取安卓ID'}
+        {'methodName': 'getString', 'args': [ 'android_id' ], 'action': action, 'messages': '获取安卓ID'}
     ]);
     hook('android.provider.Settings$System', [
-        {'methodName': 'getString', 'action': action, 'messages': '获取安卓ID'}
+        {'methodName': 'getString', 'args': [ 'android_id' ], 'action': action, 'messages': '获取安卓ID'}
     ]);
 
 

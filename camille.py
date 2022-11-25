@@ -215,15 +215,17 @@ def agree_privacy(privacy_policy_status, device_id):
     try:
         # 等待应用启动
         time.sleep(5)
-        sc = SimulateClick(device_id, 'screen.png')
-        sc.run()
-        result = sc.get_result()
-        while result == 1:
-            sc = SimulateClick(device_id, 'screen.png')
-            sc.run()
+        screen_save_path = '/data/local/tmp'
+        sc = SimulateClick(device_id, screen_save_path, 'screen.png')
+        screencap_result = sc.run()
+        if screencap_result:
             result = sc.get_result()
-        if result == 2:
-            privacy_policy_status.value = '后'
+            while result == 1:
+                sc = SimulateClick(device_id, screen_save_path, 'screen.png')
+                sc.run()
+                result = sc.get_result()
+            if result == 2:
+                privacy_policy_status.value = '后'
     except KeyboardInterrupt:
         pass
 

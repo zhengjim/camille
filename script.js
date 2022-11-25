@@ -71,7 +71,7 @@ function hookMethod(targetClass, targetMethod, targetArgs, action, messages) {
                 var temp = this.$init.apply(this, arguments);
                 // 是否含有需要过滤的参数
                 var argumentValues = Object.values(arguments);
-                if(Array.isArray(targetArgs) && !targetArgs.every(item => argumentValues.includes(item))) {
+                if(Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
                     return null;
                 }
                 var arg = '';
@@ -97,7 +97,7 @@ function hookMethod(targetClass, targetMethod, targetArgs, action, messages) {
                 var temp = this[targetMethod].apply(this, arguments);
                 // 是否含有需要过滤的参数
                 var argumentValues = Object.values(arguments);
-                if(Array.isArray(targetArgs) && !targetArgs.every(item => argumentValues.includes(item))) {
+                if(Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
                     return null;
                 }
                 var arg = '';

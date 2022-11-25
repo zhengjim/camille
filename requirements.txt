@@ -1,4 +1,3 @@
 xlwt==1.3.0
 click==7.1.2
 opencv-python
-pandas

@@ -21,6 +21,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 更新日志：
 
 ```
+2022-12-12：修复android 13有兼容性问题
+
 2022-11-25：修复截图bug、优化hook方法支持传参数过滤
 
 2022-11-21：新增可指定frida-server用于对抗frida检测，参数-H、修复模拟器没有sdcard目录报错问题

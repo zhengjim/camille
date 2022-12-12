@@ -51,9 +51,9 @@ function alertSend(action, messages, arg) {
 
 // 增强健壮性，避免有的设备无法使用 Array.isArray 方法
 if (!Array.isArray) {
-  Array.isArray = function(arg) {
-    return Object.prototype.toString.call(arg) === '[object Array]';
-  };
+    Array.isArray = function (arg) {
+        return Object.prototype.toString.call(arg) === '[object Array]';
+    };
 }
 
 // hook方法
@@ -71,7 +71,7 @@ function hookMethod(targetClass, targetMethod, targetArgs, action, messages) {
                 var temp = this.$init.apply(this, arguments);
                 // 是否含有需要过滤的参数
                 var argumentValues = Object.values(arguments);
-                if(Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
+                if (Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
                     return null;
                 }
                 var arg = '';
@@ -97,7 +97,7 @@ function hookMethod(targetClass, targetMethod, targetArgs, action, messages) {
                 var temp = this[targetMethod].apply(this, arguments);
                 // 是否含有需要过滤的参数
                 var argumentValues = Object.values(arguments);
-                if(Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
+                if (Array.isArray(targetArgs) && targetArgs.length > 0 && !targetArgs.every(item => argumentValues.includes(item))) {
                     return null;
                 }
                 var arg = '';
@@ -132,6 +132,47 @@ function hook(targetClass, methodData) {
             }
         }
     });
+}
+
+// hook获取其他app信息api，排除app自身
+function hookApplicationPackageManagerExceptSelf(targetMethod, action) {
+    var _ApplicationPackageManager = Java.use('android.app.ApplicationPackageManager');
+    try {
+        try {
+            var overloadCount = _ApplicationPackageManager[targetMethod].overloads.length;
+        } catch (e) {
+            console.log(e)
+            console.log('[*] hook(' + targetMethod + ')方法失败,请检查该方法是否存在！！！');
+            return false;
+        }
+        for (var i = 0; i < overloadCount; i++) {
+            _ApplicationPackageManager[targetMethod].overloads[i].implementation = function () {
+                var temp = this[targetMethod].apply(this, arguments);
+                var arg = '';
+                for (var j = 0; j < arguments.length; j++) {
+                    if (j === 0) {
+                        var string_to_recv;
+                        send({'type': 'app_name', 'data': arguments[j]});
+                        recv(function (received_json_object) {
+                            string_to_recv = received_json_object.my_data;
+                        }).wait();
+                    }
+                    arg += '参数' + j + '：' + JSON.stringify(arguments[j]) + '\r\n';
+                }
+                if (arg.length == 0) arg = '无参数';
+                else arg = arg.slice(0, arg.length - 1);
+                if (string_to_recv) {
+                    alertSend(action, targetMethod + '获取的数据为：' + temp, arg);
+                }
+                return temp;
+            }
+        }
+    } catch (e) {
+        console.log(e);
+        return
+    }
+
+
 }
 
 // 申请权限
@@ -190,10 +231,10 @@ function getSystemData() {
     var action = '获取系统信息';
 
     hook('android.provider.Settings$Secure', [
-        {'methodName': 'getString', 'args': [ 'android_id' ], 'action': action, 'messages': '获取安卓ID'}
+        {'methodName': 'getString', 'args': ['android_id'], 'action': action, 'messages': '获取安卓ID'}
     ]);
     hook('android.provider.Settings$System', [
-        {'methodName': 'getString', 'args': [ 'android_id' ], 'action': action, 'messages': '获取安卓ID'}
+        {'methodName': 'getString', 'args': ['android_id'], 'action': action, 'messages': '获取安卓ID'}
     ]);
 
 
@@ -283,62 +324,9 @@ function getPackageManager() {
     ]);
 
     //需排除应用本身
-    var _ApplicationPackageManager = Java.use('android.app.ApplicationPackageManager');
-    try {
-        //getApplicationInfo
-        _ApplicationPackageManager.getApplicationInfo.implementation = function (p1, p2) {
-            var temp = this.getApplicationInfo(p1, p2);
-            var string_to_recv;
-            // 判断是否为自身应用，是的话不记录
-            send({'type': 'app_name', 'data': p1});
-            recv(function (received_json_object) {
-                string_to_recv = received_json_object.my_data;
-            }).wait();
-            if (string_to_recv) {
-                alertSend(action, 'getApplicationInfo获取的数据为：' + temp, p1);
-            }
-            return temp;
-        };
-    } catch (e) {
-        console.log(e)
-    }
-    //getPackageInfoAsUser
-    try {
-        _ApplicationPackageManager.getPackageInfoAsUser.implementation = function (p1, p2, p3) {
-            var temp = this.getPackageInfoAsUser(p1, p2, p3);
-            var string_to_recv;
-            // 判断是否为自身应用，是的话不记录
-            send({'type': 'app_name', 'data': p1});
-            recv(function (received_json_object) {
-                string_to_recv = received_json_object.my_data;
-            }).wait();
-            if (string_to_recv) {
-                alertSend(action, 'getPackageInfoAsUser获取的数据为：' + temp, p1);
-            }
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
-
-    //getInstallerPackageName
-    try {
-        _ApplicationPackageManager.getInstallerPackageName.implementation = function (p1) {
-            var temp = this.getInstallerPackageName(p1);
-            var string_to_recv;
-            // 判断是否为自身应用，是的话不记录
-            send({'type': 'app_name', 'data': p1});
-            recv(function (received_json_object) {
-                string_to_recv = received_json_object.my_data;
-            }).wait();
-            if (string_to_recv) {
-                alertSend(action, 'getInstallerPackageName获取的数据为：' + temp, p1);
-            }
-            return temp;
-        }
-    } catch (e) {
-        console.log(e)
-    }
+    hookApplicationPackageManagerExceptSelf('getApplicationInfo', action);
+    hookApplicationPackageManagerExceptSelf('getPackageInfoAsUser', action);
+    hookApplicationPackageManagerExceptSelf('getInstallerPackageName', action);
 }
 
 // 获取位置信息

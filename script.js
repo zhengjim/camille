@@ -322,7 +322,6 @@ function getPackageManager() {
         {'methodName': 'getRunningAppProcesses', 'action': action, 'messages': '获取了正在运行的App'},
         {'methodName': 'getRunningServiceControlPanel', 'action': action, 'messages': '获取了正在运行的服务面板'},
     ]);
-
     //需排除应用本身
     hookApplicationPackageManagerExceptSelf('getApplicationInfo', action);
     hookApplicationPackageManagerExceptSelf('getPackageInfoAsUser', action);

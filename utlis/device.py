@@ -60,9 +60,7 @@ def select_device(device_id, host):
             for entry in devices_data:
                 print(format_string.format(*entry.values()))
         else:
-            print_msg("无设备连接，请退出检查")
-            exit()
-        print()
+            return None
         if devices_num > 1:
             if host:
                 selection = int(input("检测到有多个设备，请选择{}对应设备编号：".format(host)))
@@ -100,10 +98,14 @@ def get_frida_device(device_id=None, host=None):
         device_selection = select_device(device_id, host)
         if device_selection is None:
             try:
-                device = frida.get_usb_device(1)
+                device = frida.get_usb_device()
             except:
-                print_msg('\n获取USB设备失败，使用remote模式...')
-                device = frida.get_remote_device()
+                try:
+                    print_msg('\n获取USB设备失败，使用remote模式...')
+                    device = frida.get_remote_device()
+                except:
+                    print_msg('\nremote模式失败，设备连接失败，请退出检查...')
+                    exit()
         else:
             if host:
                 result['did'] = device_selection.id

@@ -141,8 +141,6 @@ function hookApplicationPackageManagerExceptSelf(targetMethod, action) {
         try {
             var overloadCount = _ApplicationPackageManager[targetMethod].overloads.length;
         } catch (e) {
-            console.log(e)
-            console.log('[*] hook(' + targetMethod + ')方法失败,请检查该方法是否存在！！！');
             return false;
         }
         for (var i = 0; i < overloadCount; i++) {

@@ -83,7 +83,7 @@ python camille.py -h
 
 为方便大家交流，创建交流群有需要的加群。后续过期加V，备注github。就会拉进群。
 
-<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "300" height = "450" alt="" align=center /><img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
+<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "280" height = "450" alt="" align=center /><img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
 
 ## Stargazers over time
 

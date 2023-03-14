@@ -222,6 +222,17 @@ function getPhoneState() {
         {'methodName': 'getCid', 'action': action, 'messages': '获取基站cid信息'},
         {'methodName': 'getLac', 'action': action, 'messages': '获取基站lac信息'}
     ]);
+
+    // 短信
+    hook('android.telephony.SmsManager', [
+        {'methodName': 'sendTextMessageInternal', 'action': action, 'messages': '获取短信信息-发送短信'},
+        {'methodName': 'getDefault', 'action': action, 'messages': '获取短信信息-发送短信'},
+        {'methodName': 'sendTextMessageWithSelfPermissions', 'action': action, 'messages': '获取短信信息-发送短信'},
+        {'methodName': 'sendMultipartTextMessageInternal', 'action': action, 'messages': '获取短信信息-发送短信'},
+        {'methodName': 'sendDataMessage', 'action': action, 'messages': '获取短信信息-发送短信'},
+        {'methodName': 'sendDataMessageWithSelfPermissions', 'action': action, 'messages': '获取短信信息-发送短信'},
+    ]);
+
 }
 
 // 系统信息(AndroidId/标识/content敏感信息)
@@ -246,6 +257,32 @@ function getSystemData() {
 
     hook('android.content.ClipboardManager', [
         {'methodName': 'getPrimaryClip', 'action': action, 'messages': '读取剪切板信息'},
+        {'methodName': 'setPrimaryClip', 'action': action, 'messages': '写入剪切板信息'},
+    ]);
+
+    hook('android.telephony.UiccCardInfo', [
+        {'methodName': 'getIccId', 'action': action, 'messages': '读取手机IccId信息'},
+    ]);
+
+    //小米
+    hook('com.android.id.impl.IdProviderImpl', [
+        {'methodName': 'getUDID', 'action': action, 'messages': '读取小米手机UDID'},
+        {'methodName': 'getOAID', 'action': action, 'messages': '读取小米手机OAID'},
+        {'methodName': 'getVAID', 'action': action, 'messages': '读取小米手机VAID'},
+        {'methodName': 'getAAID', 'action': action, 'messages': '读取小米手机AAID'},
+    ]);
+
+    //三星
+    hook('com.samsung.android.deviceidservice.IDeviceIdService$Stub$Proxy', [
+        {'methodName': 'getOAID', 'action': action, 'messages': '读取三星手机OAID'},
+        {'methodName': 'getVAID', 'action': action, 'messages': '读取三星手机VAID'},
+        {'methodName': 'getAAID', 'action': action, 'messages': '读取三星手机AAID'},
+    ]);
+
+    hook('repeackage.com.samsung.android.deviceidservice.IDeviceIdService$Stub$Proxy', [
+        {'methodName': 'getOAID', 'action': action, 'messages': '读取三星手机OAID'},
+        {'methodName': 'getVAID', 'action': action, 'messages': '读取三星手机VAID'},
+        {'methodName': 'getAAID', 'action': action, 'messages': '读取三星手机AAID'},
     ]);
 
     //获取content敏感信息
@@ -338,6 +375,7 @@ function getGSP() {
         {'methodName': 'getGnssYearOfHardware', 'action': action, 'messages': action},
         {'methodName': 'getProvider', 'action': action, 'messages': action},
         {'methodName': 'requestSingleUpdate', 'action': action, 'messages': action},
+        {'methodName': 'getCurrentLocation', 'action': action, 'messages': action},
     ]);
 
     hook('android.location.Location', [
@@ -354,6 +392,11 @@ function getGSP() {
         {'methodName': 'getSpeedAccuracyMetersPerSecond', 'action': action, 'messages': action},
         {'methodName': 'getTime', 'action': action, 'messages': action},
         {'methodName': 'getVerticalAccuracyMeters', 'action': action, 'messages': action},
+    ]);
+
+    hook('android.location.Geocoder', [
+        {'methodName': 'getFromLocation', 'action': action, 'messages': action},
+        {'methodName': 'getFromLocationName', 'action': action, 'messages': action},
     ]);
 
 }
@@ -390,10 +433,21 @@ function getNetwork() {
         {'methodName': 'getConnectionInfo', 'action': action, 'messages': '获取wifi信息'},
         {'methodName': 'getConfiguredNetworks', 'action': action, 'messages': '获取wifi信息'},
         {'methodName': 'getScanResults', 'action': action, 'messages': '获取wifi信息'},
+        {'methodName': 'getWifiState', 'action': action, 'messages': '获取wifi状态信息'},
     ]);
 
     hook('java.net.InetAddress', [
-        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取IP地址'}
+        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取IP地址'},
+        {'methodName': 'getAddress', 'action': action, 'messages': '获取网络address信息'},
+        {'methodName': 'getHostName', 'action': action, 'messages': '获取网络hostname信息'},
+    ]);
+
+    hook('java.net.Inet4Address', [
+        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取IP地址'},
+    ]);
+
+    hook('java.net.Inet6Address', [
+        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取IP地址'},
     ]);
 
     hook('java.net.NetworkInterface', [
@@ -405,7 +459,17 @@ function getNetwork() {
         {'methodName': 'getTypeName', 'action': action, 'messages': '获取网络类型名称'},
         {'methodName': 'getExtraInfo', 'action': action, 'messages': '获取网络名称'},
         {'methodName': 'isAvailable', 'action': action, 'messages': '获取网络是否可用'},
-        {'methodName': 'isConnected', 'action': action, 'messages': '获取网络是否连接'}
+        {'methodName': 'isConnected', 'action': action, 'messages': '获取网络是否连接'},
+    ]);
+
+    hook('android.net.ConnectivityManager', [
+        {'methodName': 'getActiveNetworkInfo', 'action': action, 'messages': '获取网络状态信息'},
+    ]);
+
+    hook('java.net.InetSocketAddress', [
+        {'methodName': 'getHostAddress', 'action': action, 'messages': '获取网络hostaddress信息'},
+        {'methodName': 'getAddress', 'action': action, 'messages': '获取网络address信息'},
+        {'methodName': 'getHostName', 'action': action, 'messages': '获取网络hostname信息'},
     ]);
 
     // ip地址
@@ -458,6 +522,7 @@ function getFileMessage() {
 //获取麦克风信息
 function getMedia() {
     var action = '获取麦克风'
+
     hook('android.media.MediaRecorder', [
         {'methodName': 'start', 'action': action, 'messages': '获取麦克风'},
     ]);
@@ -466,6 +531,15 @@ function getMedia() {
     ]);
 }
 
+//获取传感器信息
+function getSensor() {
+    var action = '获取传感器信息'
+
+    hook('android.hardware.SensorManager', [
+        {'methodName': 'getSensorList', 'action': action, 'messages': '获取传感器信息'},
+    ]);
+
+}
 
 function customHook() {
     var action = '用户自定义hook';
@@ -489,6 +563,7 @@ function useModule(moduleList) {
         'bluetooth': [getBluetooth],
         'file': [getFileMessage],
         'media': [getMedia],
+        'sensor': [getSensor],
         'custom': [customHook]
     };
     var _m = Object.keys(_module);

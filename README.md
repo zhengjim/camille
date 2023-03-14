@@ -21,6 +21,8 @@ python3、frida 、一台已root手机(我测试机为Redmi 3s，刷机成魔趣
 更新日志：
 
 ```
+2023-03-14：新增敏感接口
+
 2022-12-12：修复android 13有兼容性问题
 
 2022-11-25：修复截图bug、优化hook方法支持传参数过滤
@@ -81,9 +83,9 @@ python camille.py -h
 
 感谢[@You-guess-guess](https://github.com/You-guess-guess) 提供的App合规检测交流群，有需要的可以加群交流~
 
-为方便大家交流，创建交流群有需要的加群。后续过期加V(群满200，需要的加V)，备注github。就会拉进群。
+为方便大家交流，创建交流群有需要的加群。App隐私合规交流群满200，需要的加V，备注github。就会拉进群。
 
-<img src="https://github.com/zhengjim/camille/raw/master/images/q.png" width = "280" height = "450" alt="" align=center /><img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
+<img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
 
 ## Stargazers over time
 

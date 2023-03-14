@@ -76,6 +76,7 @@ python camille.py com.zhengjim.myapplication -t 3
 |bluetooth|蓝牙|
 |file|文件|
 |media|麦克风|
+|sensor|传感器|
 |custom| 用户自定义接口|
 
 - -nu：跳过扫描指定模块。与命令`-u`互斥。多个模块用','隔开。例如：phone,permission 模块列表同上

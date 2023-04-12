@@ -87,10 +87,14 @@ python camille.py -h
 
 <img src="https://github.com/zhengjim/camille/raw/master/images/v.png" width = "300" height = "450" alt="" align=center />
 
+
+## 404星链计划
+<img src="https://github.com/knownsec/404StarLink-Project/raw/master/logo.png" width="30%">
+
+camille项目 现已加入 [404星链计划](https://github.com/knownsec/404StarLink)
+
 ## Stargazers over time
 
 [![Top Langs](https://profile-counter.glitch.me/zhengjim/count.svg)](https://www.zhengjim.com)
 
 [![Stargazers over time](https://starchart.cc/zhengjim/camille.svg)](https://starchart.cc/zhengjim/camille)
-
-

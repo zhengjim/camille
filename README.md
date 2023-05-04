@@ -81,7 +81,7 @@ python camille.py -h
 
 ## 讨论群
 
-感谢[@You-guess-guess](https://github.com/You-guess-guess) 提供的App合规检测交流群，有需要的可以加群交流~
+感谢[@ysrfeng](https://github.com/ysrfeng) 提供的App合规检测交流群，有需要的可以加群交流~
 
 为方便大家交流，创建交流群有需要的加群。App隐私合规交流群满200，需要的加V，备注github。就会拉进群。
 

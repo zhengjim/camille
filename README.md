@@ -8,7 +8,7 @@ Android App隐私合规检测辅助工具
 
 ## 隐私合规资料及政策
 
-[隐私资料政策wiki](https://github.com/zhengjim/camille/wiki)
+[隐私资料政策wiki](https://github.com/zhengjim/camille/wiki/APP-%E4%BE%B5%E5%AE%B3%E7%94%A8%E6%88%B7%E6%9D%83%E7%9B%8A%E4%B8%93%E9%A1%B9%E6%95%B4%E6%B2%BB%E8%A1%8C%E5%8A%A8%E6%81%A2%E5%A4%8D%E4%B8%8A%E6%9E%B6%E6%B5%81%E7%A8%8B)
 
 ## 安装
 
